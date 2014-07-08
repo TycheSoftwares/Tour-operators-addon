@@ -3,7 +3,7 @@
 Plugin Name: Tour Operators Addon - WooCommerce Booking Plugin 
 Plugin URI: http://www.tychesoftwares.com/store/premium-plugins/woocommerce-booking-plugin
 Description: This plugin lets you add and Mange Tour Operators.
-Version: 1.0
+Version: 1.1
 Author: Ashok Rane
 Author URI: http://www.tychesoftwares.com/
 */
@@ -15,13 +15,13 @@ $ExampleUpdateChecker = new PluginUpdateChecker(
 );*/
 
 global $TourUpdateChecker;
-$TourUpdateChecker = '1.0';
+$TourUpdateChecker = '1.1';
 
 // this is the URL our updater / license checker pings. This should be the URL of the site with EDD installed
 define( 'EDD_SL_STORE_URL_TOUR_BOOK', 'http://www.tychesoftwares.com/' ); // IMPORTANT: change the name of this constant to something unique to prevent conflicts with other plugins using this system
 
 // the name of your product. This is the title of your product in EDD and should match the download title in EDD exactly
-define( 'EDD_SL_ITEM_NAME_TOUR_BOOK', 'Woocommerce Tour Operators Addon' ); // IMPORTANT: change the name of this constant to something unique to prevent conflicts with other plugins using this system
+define( 'EDD_SL_ITEM_NAME_TOUR_BOOK', 'Tour Operators Addon for the WooCommerce Booking and Appointment Plugin' ); // IMPORTANT: change the name of this constant to something unique to prevent conflicts with other plugins using this system
 
 if( !class_exists( 'EDD_TOUR_BOOK_Plugin_Updater' ) ) {
 	// load our custom updater if it doesn't already exist
@@ -33,7 +33,7 @@ $license_key = trim( get_option( 'edd_sample_license_key_tour_book' ) );
 
 // setup the updater
 $edd_updater = new EDD_TOUR_BOOK_Plugin_Updater( EDD_SL_STORE_URL_TOUR_BOOK, __FILE__, array(
-		'version' 	=> '1.0', 		// current version number
+		'version' 	=> '1.1', 		// current version number
 		'license' 	=> $license_key, 	// license key (used get_option above to retrieve from DB)
 		'item_name' => EDD_SL_ITEM_NAME_TOUR_BOOK, 	// name of this plugin
 		'author' 	=> 'Ashok Rane'  // author of this plugin
@@ -61,7 +61,7 @@ if (!class_exists('tour_operators')) {
 			add_filter('bkap_get_item_data', array(&$this, 'get_item_data'), 10, 2 );
 			add_action('bkap_operator_update_order', array(&$this, 'order_item_meta'), 10,2);
 			add_filter('bkap_save_product_settings', array(&$this, 'tour_settings_save'),10,2);
-			add_action( 'woocommerce_single_product_summary', array(&$this, 'wc_add_tour_operator'), 6 );
+			add_action( 'woocommerce_single_product_summary', array(&$this, 'wc_add_tour_operator') );
 			add_action('bkap_after_listing_enabled', array(&$this, 'assign_tours'));
 			add_action( 'show_user_profile', array(&$this, 'extra_user_profile_fields') );
 			add_action( 'edit_user_profile', array(&$this, 'extra_user_profile_fields') );
@@ -72,12 +72,12 @@ if (!class_exists('tour_operators')) {
 			
             add_filter('user_has_cap', array($this, 'user_has_cap'), 10, 3);
             
-    		add_action('admin_init', array(&$this, 'edd_sample_register_option'));
-			add_action('admin_init', array(&$this, 'edd_sample_deactivate_license'));
-			add_action('admin_init', array(&$this, 'edd_sample_activate_license'));
-		}
+    		add_action('admin_init', array(&$this, 'edd_sample_register_option_tour'));
+			add_action('admin_init', array(&$this, 'edd_sample_deactivate_license_tour'));
+			add_action('admin_init', array(&$this, 'edd_sample_activate_license_tour'));
+	}
 		
-	function edd_sample_activate_license() {
+	function edd_sample_activate_license_tour() {
 					
 				// listen for our activate button to be clicked
 				if( isset( $_POST['edd_license_activate'] ) ) {
@@ -120,7 +120,7 @@ if (!class_exists('tour_operators')) {
 			* This will descrease the site count
 			***********************************************/
 			
-			function edd_sample_deactivate_license() {
+			function edd_sample_deactivate_license_tour() {
 					
 				// listen for our activate button to be clicked
 				if( isset( $_POST['edd_license_deactivate'] ) ) {
@@ -197,13 +197,13 @@ if (!class_exists('tour_operators')) {
 				}
 			}
 			
-			function edd_sample_register_option() {
+			function edd_sample_register_option_tour() {
 				// creates our settings in the options table
-				register_setting('edd_sample_license', 'edd_sample_license_key_tour_book', array(&$this, 'edd_sanitize_license' ));
+				register_setting('edd_tour_book_license', 'edd_sample_license_key_tour_book', array(&$this, 'edd_sanitize_license_tour' ));
 			}
 			
 			
-			function edd_sanitize_license( $new ) {
+			function edd_sanitize_license_tour( $new ) {
 				$old = get_option( 'edd_sample_license_key_tour_book' );
 				if( $old && $old != $new ) {
 					delete_option( 'edd_sample_license_status_tour_book' ); // new license has been entered, so must reactivate
@@ -220,7 +220,7 @@ if (!class_exists('tour_operators')) {
 								<h2><?php _e('Plugin License Options'); ?></h2>
 								<form method="post" action="options.php">
 								
-									<?php settings_fields('edd_sample_license'); ?>
+									<?php settings_fields('edd_tour_book_license'); ?>
 									
 									<table class="form-table">
 										<tbody>
@@ -264,63 +264,71 @@ if (!class_exists('tour_operators')) {
 			if(is_admin()):
 			$new_posts = array();
 			$user = new WP_User(get_current_user_id());
-			if($user->roles[0]=='tour_operator'){
-			//
-			// loop through all the post objects
-			//
-			
-			foreach( $posts as $post ) {
-			if($post->post_type == 'page'){
-				return $posts;
-			}
-			elseif($post->post_type != 'shop_order' ){
-			$include = false;
-				$booking_settings = get_post_meta($post->ID, 'woocommerce_booking_settings', true);
-				if($post->post_author == get_current_user_id() || (isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]==get_current_user_id())){
-					$include = '1';
-				}
-				else
-					$inlcude = '0';
-				if ( $include == '1') {
-					$new_posts[] = $post;
-				}
-			}
-			elseif($post->post_type == 'shop_order'){
-				global $wpdb;
-				$check_query = "SELECT a.post_id FROM `".$wpdb->prefix."booking_history` as a join `".$wpdb->prefix."booking_order_history` as b on a.id=b.booking_id
-
-								and b.order_id='".$post->ID."'";
-								
-
-				$results_check = $wpdb->get_results ($check_query);
-				$flag = false;
-				if(!empty($results_check )){
-					foreach($results_check as $res){
-						$product_id = $res->post_id;
-						$booking_settings = get_post_meta($product_id, 'woocommerce_booking_settings', true);
-					
-						if(!isset($booking_settings["booking_tour_operator"]) ||(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]!=get_current_user_id()))
-						$flag = false;
-						elseif(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]==get_current_user_id())
-						{$flag = true;
-						break;
+				if($user->roles[0]=='tour_operator')
+				{
+				//
+				// loop through all the post objects
+				//
+				
+					foreach( $posts as $post ) 
+					{
+						if($post->post_type == 'page')
+						{
+							return $posts;
 						}
-						else
-						$flag = false;
+						elseif($post->post_type != 'shop_order' )
+						{
+							$include = false;
+							$booking_settings = get_post_meta($post->ID, 'woocommerce_booking_settings', true);
+							if($post->post_author == get_current_user_id() || (isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]==get_current_user_id()))
+							{
+								$include = '1';
+							}
+							else
+								$inlcude = '0';
+							if ( $include == '1') 
+							{
+								$new_posts[] = $post;
+							}
+						}
+						elseif($post->post_type == 'shop_order')
+						{
+							global $wpdb;
+							$check_query = "SELECT a.post_id FROM `".$wpdb->prefix."booking_history` as a join `".$wpdb->prefix."booking_order_history` as b on a.id=b.booking_id
+										and b.order_id='".$post->ID."'";
+										
+		
+							$results_check = $wpdb->get_results ($check_query);
+							$flag = false;
+							if(!empty($results_check ))
+							{
+								foreach($results_check as $res)
+								{
+									$product_id = $res->post_id;
+									$booking_settings = get_post_meta($product_id, 'woocommerce_booking_settings', true);
+		
+									if(!isset($booking_settings["booking_tour_operator"]) ||(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]!=get_current_user_id()))
+										$flag = false;
+									elseif(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]==get_current_user_id())
+									{
+										$flag = true;
+										break;
+									}
+									else
+										$flag = false;
+								}
+							}
+								
+							if($flag)	
+							{
+							   $new_posts[] = $post;
+							} 
+						}	
 					}
 				}
-					
-				
-						
-				if($flag)	{
-					   $new_posts[] = $post;
-						} 
-					}	
-				}
-			
-				}
-				else{
-					return $posts;
+				else
+				{
+						return $posts;
 				}
 			//
 			// send the new post array back to be used by WordPress
@@ -335,44 +343,50 @@ if (!class_exists('tour_operators')) {
 		
 			 global $post,$shop_order;
 			 global $wpdb;
-			 if(isset($post->ID)){
-		if($args[0] == 'edit_post'){
-						$check_query = "SELECT a.post_id FROM `".$wpdb->prefix."booking_history` as a join `".$wpdb->prefix."booking_order_history` as b on a.id=b.booking_id
-
+			 if(isset($post->ID))
+			 {
+				if($args[0] == 'edit_post')
+				{
+					$check_query = "SELECT a.post_id FROM `".$wpdb->prefix."booking_history` as a join `".$wpdb->prefix."booking_order_history` as b on a.id=b.booking_id
 								and b.order_id='".$post->ID."'";
-								
 
-				$results_check = $wpdb->get_results ( $check_query );
-				$flag = false;
-				if(!empty($results_check )){
-					foreach($results_check as $res){
-						$product_id = $res->post_id;
-						$booking_settings = get_post_meta($product_id, 'woocommerce_booking_settings', true);
-					
-						if(!isset($booking_settings["booking_tour_operator"]) ||(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]!=get_current_user_id()))
-						$flag = false;
-						elseif(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]==get_current_user_id())
-						{$flag = true;
-						}
-						else
-						$flag = false;
-					}
-					}
-					
-				
+					$results_check = $wpdb->get_results ( $check_query );
+					$flag = false;
 			
-			if(!$flag)	{
-				   unset($all_caps['edit_shop_orders']);
-				    unset($all_caps['edit_published_shop_orders']);
-					 unset($all_caps['edit_others_shop_orders']);
-          
-					} else
+					if(!empty($results_check ))
+					{
+						foreach($results_check as $res)
+						{
+							$product_id = $res->post_id;
+				//			$booking_settings = get_post_meta($product_id, 'woocommerce_booking_settings', true);
+					
+							$user_capab = get_user_meta(get_current_user_id(),'wp_capabilities');
+							
+					/*		if(!isset($booking_settings["booking_tour_operator"]) ||(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]!=get_current_user_id()))
+							$flag = false;
+							elseif(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]==get_current_user_id())
+							{$flag = true;
+							}*/
+							if (array_key_exists('administrator',$user_capab[0]))
+								$flag = true;
+							else
+								$flag = false;
+						}
+					}
+					
+					if(!$flag)	
+					{
+				   		unset($all_caps['edit_shop_orders']);
+			//	    	unset($all_caps['edit_published_shop_orders']);
+					 	unset($all_caps['edit_others_shop_orders']);
+          			} 
+          			else
 					{
 					
 					}
-			}
-			}			
-			 return $all_caps;		
+				}
+			}		
+			return $all_caps;		
 		}
 		
 		function operators_activate(){
@@ -500,15 +514,18 @@ if (!class_exists('tour_operators')) {
 
  
 		
-		function wc_add_tour_operator() {
-			?>
-			<div class="2nd-tile">
-				<?php 
+		function wc_add_tour_operator()
+		{
+			
 				$booking_settings = get_post_meta(get_the_ID(), 'woocommerce_booking_settings', true);
-				if(isset($booking_settings["show_tour_operator"]) && $booking_settings["show_tour_operator"]=='on' && isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]>0){
+				if(isset($booking_settings["show_tour_operator"]) && $booking_settings["show_tour_operator"]=='on' && isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]>0)
+				{
 						$booking_tour_operator = $booking_settings["booking_tour_operator"];
 						$user = get_userdata( $booking_tour_operator );	
 						if(isset($user->user_login))
+							?>
+										<div class="2nd-tile">
+											<?php 
 				echo "Tour Operator: ".$user->user_login;  ?>
 			</div>
 			<?php }
@@ -878,7 +895,7 @@ if (!class_exists('tour_operators')) {
 							
 							$var .= "<tr>
 							<td>".$id_value->order_id."</td>
-							<td>".$order->order_custom_fields['_billing_first_name'][0]." ".$order->order_custom_fields['_billing_last_name'][0]."</td>
+							<td>".$order->billing_first_name." ".$order->billing_last_name."</td>
 							<td>".$items_value['name']."</td>
 							<td>".$start_date."</td>
 							<td>".$end_date."</td>
