@@ -55,7 +55,7 @@ if (!class_exists('tour_operators')) {
 			add_action('bkap_add_submenu', array(&$this, 'operator_tour_submenu'), 11 );
 			add_action('bkap_before_add_to_cart_button',array(&$this, 'add_comment_field'), 10, 1);
 		
-			add_filter('bkap_add_cart_item_data', array(&$this, 'add_cart_item_data'), 10, 2);
+			add_filter('bkap_addon_add_cart_item_data', array(&$this, 'add_cart_item_data'), 10, 2);
 			
 			//add_filter('operator_get_cart_item_from_session', array(&$this, 'get_cart_item_from_session'),10,2);
 			add_filter('bkap_get_item_data', array(&$this, 'get_item_data'), 10, 2 );
