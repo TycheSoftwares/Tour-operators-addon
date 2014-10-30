@@ -347,11 +347,14 @@ if (!class_exists('tour_operators')) {
 			 {
 				if($args[0] == 'edit_post')
 				{
+					$flag = false;
+					if ($post->post_status == "wc-cancelled" || $post->post_status == "wc-refunded") {
+						$flag = true;
+					}
 					$check_query = "SELECT a.post_id FROM `".$wpdb->prefix."booking_history` as a join `".$wpdb->prefix."booking_order_history` as b on a.id=b.booking_id
 								and b.order_id='".$post->ID."'";
 
 					$results_check = $wpdb->get_results ( $check_query );
-					$flag = false;
 			
 					if(!empty($results_check ))
 					{
