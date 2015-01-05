@@ -3,7 +3,7 @@
 Plugin Name: Tour Operators Addon - WooCommerce Booking Plugin 
 Plugin URI: http://www.tychesoftwares.com/store/premium-plugins/woocommerce-booking-plugin
 Description: This plugin lets you add and Mange Tour Operators.
-Version: 1.1
+Version: 1.2
 Author: Ashok Rane
 Author URI: http://www.tychesoftwares.com/
 */
@@ -15,7 +15,7 @@ $ExampleUpdateChecker = new PluginUpdateChecker(
 );*/
 
 global $TourUpdateChecker;
-$TourUpdateChecker = '1.1';
+$TourUpdateChecker = '1.2';
 
 // this is the URL our updater / license checker pings. This should be the URL of the site with EDD installed
 define( 'EDD_SL_STORE_URL_TOUR_BOOK', 'http://www.tychesoftwares.com/' ); // IMPORTANT: change the name of this constant to something unique to prevent conflicts with other plugins using this system
@@ -33,17 +33,26 @@ $license_key = trim( get_option( 'edd_sample_license_key_tour_book' ) );
 
 // setup the updater
 $edd_updater = new EDD_TOUR_BOOK_Plugin_Updater( EDD_SL_STORE_URL_TOUR_BOOK, __FILE__, array(
-		'version' 	=> '1.1', 		// current version number
+		'version' 	=> '1.2', 		// current version number
 		'license' 	=> $license_key, 	// license key (used get_option above to retrieve from DB)
 		'item_name' => EDD_SL_ITEM_NAME_TOUR_BOOK, 	// name of this plugin
 		'author' 	=> 'Ashok Rane'  // author of this plugin
 )
 );
 
-load_plugin_textdomain('bkap_deposits', false, dirname( plugin_basename( __FILE__ ) ) . '/');
+function is_bkap_tours_active() {
+	if (is_plugin_active('bkap-tour-operators/tour_operators_addon.php')) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+load_plugin_textdomain('tour_operators', false, dirname( plugin_basename( __FILE__ ) ) . '/');
 {
 /**
- * bkap_deposits class
+ * tour_operators class
  **/
 if (!class_exists('tour_operators')) {
 
@@ -59,7 +68,7 @@ if (!class_exists('tour_operators')) {
 			
 			//add_filter('operator_get_cart_item_from_session', array(&$this, 'get_cart_item_from_session'),10,2);
 			add_filter('bkap_get_item_data', array(&$this, 'get_item_data'), 10, 2 );
-			add_action('bkap_operator_update_order', array(&$this, 'order_item_meta'), 10,2);
+			add_action('bkap_update_order', array(&$this, 'tours_order_item_meta'), 10,2);
 			add_filter('bkap_save_product_settings', array(&$this, 'tour_settings_save'),10,2);
 			add_action( 'woocommerce_single_product_summary', array(&$this, 'wc_add_tour_operator') );
 			add_action('bkap_after_listing_enabled', array(&$this, 'assign_tours'));
@@ -262,91 +271,73 @@ if (!class_exists('tour_operators')) {
 
 			// create an array to hold the posts we want to show
 			if(is_admin()):
-			$new_posts = array();
-			$user = new WP_User(get_current_user_id());
-				if($user->roles[0]=='tour_operator')
-				{
-				//
+				$new_posts = array();
+				$user = new WP_User(get_current_user_id());
+				if($user->roles[0]=='tour_operator') {
 				// loop through all the post objects
-				//
-				
-					foreach( $posts as $post ) 
-					{
-						if($post->post_type == 'page')
-						{
+					foreach( $posts as $post ) {
+						if($post->post_type == 'page') {
 							return $posts;
 						}
-						elseif($post->post_type != 'shop_order' )
-						{
+						elseif($post->post_type != 'shop_order' ) {
 							$include = false;
 							$booking_settings = get_post_meta($post->ID, 'woocommerce_booking_settings', true);
-							if($post->post_author == get_current_user_id() || (isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]==get_current_user_id()))
-							{
+							if($post->post_author == get_current_user_id() || (isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]==get_current_user_id())) {
 								$include = '1';
 							}
-							else
+							else {
 								$inlcude = '0';
-							if ( $include == '1') 
-							{
+							}
+							if ( $include == '1') {
 								$new_posts[] = $post;
 							}
 						}
-						elseif($post->post_type == 'shop_order')
-						{
+						elseif($post->post_type == 'shop_order') {
 							global $wpdb;
 							$check_query = "SELECT a.post_id FROM `".$wpdb->prefix."booking_history` as a join `".$wpdb->prefix."booking_order_history` as b on a.id=b.booking_id
 										and b.order_id='".$post->ID."'";
 										
-		
 							$results_check = $wpdb->get_results ($check_query);
 							$flag = false;
-							if(!empty($results_check ))
-							{
-								foreach($results_check as $res)
-								{
+							if(!empty($results_check )) {
+								foreach($results_check as $res) {
 									$product_id = $res->post_id;
 									$booking_settings = get_post_meta($product_id, 'woocommerce_booking_settings', true);
 		
-									if(!isset($booking_settings["booking_tour_operator"]) ||(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]!=get_current_user_id()))
+									if(!isset($booking_settings["booking_tour_operator"]) ||(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]!=get_current_user_id())) {
 										$flag = false;
-									elseif(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]==get_current_user_id())
-									{
+									}
+									elseif(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]==get_current_user_id()) {
 										$flag = true;
 										break;
 									}
-									else
+									else {
 										$flag = false;
+									}
 								}
 							}
 								
-							if($flag)	
-							{
+							if($flag) {
 							   $new_posts[] = $post;
 							} 
 						}	
 					}
 				}
-				else
-				{
+				else {
 						return $posts;
 				}
-			//
 			// send the new post array back to be used by WordPress
-			//
-			
-			return $new_posts;
+				return $new_posts;
 			else:
-			return $posts;
+				return $posts;
 			endif;
 		}
-		function user_has_cap($all_caps, $caps, $args){
 		
+		function user_has_cap($all_caps, $caps, $args){
 			 global $post,$shop_order;
 			 global $wpdb;
-			 if(isset($post->ID))
-			 {
-				if($args[0] == 'edit_post')
-				{
+			 if(isset($post->ID)) {
+				if($args[0] == 'edit_post') {
 					$flag = false;
 					if ($post->post_status == "wc-cancelled" || $post->post_status == "wc-refunded") {
 						$flag = true;
@@ -356,10 +347,8 @@ if (!class_exists('tour_operators')) {
 
 					$results_check = $wpdb->get_results ( $check_query );
 			
-					if(!empty($results_check ))
-					{
-						foreach($results_check as $res)
-						{
+					if(!empty($results_check )) {
+						foreach($results_check as $res) {
 							$product_id = $res->post_id;
 				//			$booking_settings = get_post_meta($product_id, 'woocommerce_booking_settings', true);
 					
@@ -370,23 +359,20 @@ if (!class_exists('tour_operators')) {
 							elseif(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]==get_current_user_id())
 							{$flag = true;
 							}*/
-							if (array_key_exists('administrator',$user_capab[0]))
+							if (array_key_exists('administrator',$user_capab[0])) {
 								$flag = true;
-							else
+							}
+							else {
 								$flag = false;
+							}
 						}
 					}
 					
-					if(!$flag)	
-					{
+					if(!$flag) {
 				   		unset($all_caps['edit_shop_orders']);
 			//	    	unset($all_caps['edit_published_shop_orders']);
 					 	unset($all_caps['edit_others_shop_orders']);
           			} 
-          			else
-					{
-					
-					}
 				}
 			}		
 			return $all_caps;		
@@ -424,12 +410,11 @@ if (!class_exists('tour_operators')) {
 		function add_comment_field($settings){
 			if(is_plugin_active('bkap-tour-operators/tour_operators_addon.php')){
 			if(isset($settings['booking_show_comment']) && $settings['booking_show_comment'] == 'on')
-			 echo  book_t('book.item-comments')."<textarea name='comments' id='comments'></textarea>";
+			 echo  bkap_get_book_t('book.item-comments')."<textarea name='comments' id='comments'></textarea>";
 			}
 		}
-		function add_cart_item_data($cart_arr, $product_id)
-		{
 		
+		function add_cart_item_data($cart_arr, $product_id) {
 			$booking_settings = get_post_meta($product_id, 'woocommerce_booking_settings', true);
 			if(isset($booking_settings['booking_show_comment']) && $booking_settings['booking_show_comment'] == 'on')
 				$cart_arr['comments'] = $_POST['comments'];
@@ -446,96 +431,81 @@ if (!class_exists('tour_operators')) {
 					print('<div id="show_addon_price" name="show_addon_price" class="show_addon_price" style="display:'.$show_price.';">'.$currency_symbol.' 0</div>');
 				
 			}*/
-		function get_cart_item_from_session( $cart_item, $values ) 
-		{
+		function get_cart_item_from_session( $cart_item, $values ) {
 		
 			if (isset($values['booking'])) :
 				$cart_item['booking'] = $values['booking'];
 				$booking_settings = get_post_meta($cart_item['product_id'], 'woocommerce_booking_settings', true);
-				if($cart_item['booking'][0]['comments'] != '')
-				{
-					
+				if($cart_item['booking'][0]['comments'] != '') {
 					$cart_item = $this->add_cart_item( $cart_item );
-					
 				}
-				endif;
-				return $cart_item;
+			endif;
+			return $cart_item;
 		}	
-		function get_item_data( $other_data, $cart_item ) 
-			{
-				$booking_settings = get_post_meta($cart_item['product_id'], 'woocommerce_booking_settings', true);
-				if(isset($booking_settings["booking_show_comment"]) && $booking_settings["booking_show_comment"] == 'on' && is_plugin_active('bkap-tour-operators/tour_operators_addon.php')){ 
+		
+		function get_item_data( $other_data, $cart_item ) {
+			$booking_settings = get_post_meta($cart_item['product_id'], 'woocommerce_booking_settings', true);
+			if(isset($booking_settings["booking_show_comment"]) && $booking_settings["booking_show_comment"] == 'on' && is_plugin_active('bkap-tour-operators/tour_operators_addon.php')) { 
 				if (isset($cart_item['booking'])) :
-				$price = '';
-				foreach ($cart_item['booking'] as $booking) :
-					if(isset($booking['comments'])):
-						$price = $booking['comments'];
-					endif;
-					
-				endforeach;
-				if(!empty($price))
-				$other_data[] = array(
-									'name'    => book_t('book.item-comments'),
-									'display' => $price
-							);
+					$price = '';
+					foreach ($cart_item['booking'] as $booking) :
+						if(isset($booking['comments'])):
+							$price = $booking['comments'];
+						endif;
+					endforeach;
+					if(!empty($price)) {
+						$other_data[] = array(
+								'name'    => bkap_get_book_t('book.item-comments'),
+								'display' => $price
+						);
+					}
 				endif;
-				}
-				
-				
-				return $other_data;
 			}
-		function order_item_meta( $values,$order) 
-			{
-				global $wpdb;
-				$product_id = $values['product_id'];
-				$booking = $values['booking'];
-				$order_item_id = $order->order_item_id;
-				$order_id = $order->order_id;
-				if(isset($values['booking'][0]['comments']) && !empty($values['booking'][0]['comments']))
-				woocommerce_add_order_item_meta($order_item_id,  book_t('book.item-comments'),$values['booking'][0]['comments'], true );
-				
-					
-			}
+			
+			return $other_data;
+		}
+			
+		function tours_order_item_meta( $values,$order) {
+			global $wpdb;
+			$product_id = $values['product_id'];
+			$booking = $values['booking'];
+			$order_item_id = $order->order_item_id;
+			$order_id = $order->order_id;
+			if(isset($values['booking'][0]['comments']) && !empty($values['booking'][0]['comments'])) {
+				woocommerce_add_order_item_meta($order_item_id,  bkap_get_book_t('book.item-comments'),$values['booking'][0]['comments'], true );
+			}	
+		}
 				
 
 		function tour_settings_save($booking_settings, $product_id){
-
-
-			if(isset($_POST['booking_tour_operator']) && !empty($_POST["booking_tour_operator"]))
-
-			{
-		
+			if(isset($_POST['booking_tour_operator']) && !empty($_POST["booking_tour_operator"])) {
 				$booking_settings['booking_tour_operator'] = $_POST['booking_tour_operator']; 
-				if(isset($_POST['show_tour_operator']))
-				$booking_settings['show_tour_operator'] = 'on';
-				if(isset($_POST['booking_show_comment']))
-				$booking_settings['booking_show_comment'] = 'on';
-
+				if(isset($_POST['show_tour_operator'])) {
+					$booking_settings['show_tour_operator'] = 'on';
+				}
+				if(isset($_POST['booking_show_comment'])) {
+					$booking_settings['booking_show_comment'] = 'on';
+				}
 			}
 			return $booking_settings;
 		}
 
- 
-		
-		function wc_add_tour_operator()
-		{
-			
-				$booking_settings = get_post_meta(get_the_ID(), 'woocommerce_booking_settings', true);
-				if(isset($booking_settings["show_tour_operator"]) && $booking_settings["show_tour_operator"]=='on' && isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]>0)
-				{
-						$booking_tour_operator = $booking_settings["booking_tour_operator"];
-						$user = get_userdata( $booking_tour_operator );	
-						if(isset($user->user_login))
-							?>
-										<div class="2nd-tile">
-											<?php 
-				echo "Tour Operator: ".$user->user_login;  ?>
-			</div>
-			<?php }
+		function wc_add_tour_operator() {
+			$booking_settings = get_post_meta(get_the_ID(), 'woocommerce_booking_settings', true);
+			if(isset($booking_settings["show_tour_operator"]) && $booking_settings["show_tour_operator"]=='on' && isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]>0) {
+				$booking_tour_operator = $booking_settings["booking_tour_operator"];
+				$user = get_userdata( $booking_tour_operator );	
+				if(isset($user->user_login)) {
+					?>
+					<div class="2nd-tile">
+					<?php 
+					echo "Tour Operator: ".$user->user_login;  ?>
+					</div>
+	<?php   	}
+			}
 		}
 
 		function assign_tours($product_id){
-
 			$booking_settings = get_post_meta($product_id, 'woocommerce_booking_settings', true);
 
 
@@ -557,10 +527,14 @@ if (!class_exists('tour_operators')) {
 						jQuery( "#date_time" ).hide();
 						jQuery( "#listing_page" ).hide();
 						jQuery( "#seasonal_pricing" ).hide();
+						jQuery( "#block_booking_page").hide();
+						jQuery( "#block_booking_price_page").hide();
 						jQuery( "#list" ).attr("class","nav-tab");
 						jQuery( "#addnew" ).attr("class","nav-tab");
 						jQuery( "#payments" ).attr("class","nav-tab");
 						jQuery( "seasonalpricing" ).attr("class","nav-tab");
+						jQuery( "#block_booking" ).attr("class","nav-tab");
+						jQuery( "#block_booking_price" ).attr("class","nav-tab");
 						jQuery( "#tours" ).attr("class","nav-tab nav-tab-active");
 					
 					}
@@ -863,7 +837,7 @@ if (!class_exists('tour_operators')) {
 
 			
 
-			$booking_time_label = book_t('book.item-cart-time');
+			$booking_time_label = bkap_get_book_t('book.item-cart-time');
 
 			
 				foreach ( $order_results as $id_key => $id_value )
