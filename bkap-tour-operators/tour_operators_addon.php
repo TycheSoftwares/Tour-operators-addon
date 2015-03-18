@@ -3,7 +3,7 @@
 Plugin Name: Tour Operators Addon - WooCommerce Booking Plugin 
 Plugin URI: http://www.tychesoftwares.com/store/premium-plugins/woocommerce-booking-plugin
 Description: This plugin lets you add and Mange Tour Operators.
-Version: 1.2
+Version: 1.3
 Author: Ashok Rane
 Author URI: http://www.tychesoftwares.com/
 */
@@ -15,7 +15,7 @@ $ExampleUpdateChecker = new PluginUpdateChecker(
 );*/
 
 global $TourUpdateChecker;
-$TourUpdateChecker = '1.2';
+$TourUpdateChecker = '1.3';
 
 // this is the URL our updater / license checker pings. This should be the URL of the site with EDD installed
 define( 'EDD_SL_STORE_URL_TOUR_BOOK', 'http://www.tychesoftwares.com/' ); // IMPORTANT: change the name of this constant to something unique to prevent conflicts with other plugins using this system
@@ -33,7 +33,7 @@ $license_key = trim( get_option( 'edd_sample_license_key_tour_book' ) );
 
 // setup the updater
 $edd_updater = new EDD_TOUR_BOOK_Plugin_Updater( EDD_SL_STORE_URL_TOUR_BOOK, __FILE__, array(
-		'version' 	=> '1.2', 		// current version number
+		'version' 	=> '1.3', 		// current version number
 		'license' 	=> $license_key, 	// license key (used get_option above to retrieve from DB)
 		'item_name' => EDD_SL_ITEM_NAME_TOUR_BOOK, 	// name of this plugin
 		'author' 	=> 'Ashok Rane'  // author of this plugin
@@ -64,14 +64,16 @@ if (!class_exists('tour_operators')) {
 			add_action('bkap_add_submenu', array(&$this, 'operator_tour_submenu'), 11 );
 			add_action('bkap_before_add_to_cart_button',array(&$this, 'add_comment_field'), 10, 1);
 		
-			add_filter('bkap_addon_add_cart_item_data', array(&$this, 'add_cart_item_data'), 10, 2);
+			add_filter('bkap_addon_add_cart_item_data', array(&$this, 'tours_add_cart_item_data'), 10, 2);
 			
 			//add_filter('operator_get_cart_item_from_session', array(&$this, 'get_cart_item_from_session'),10,2);
 			add_filter('bkap_get_item_data', array(&$this, 'get_item_data'), 10, 2 );
 			add_action('bkap_update_order', array(&$this, 'tours_order_item_meta'), 10,2);
 			add_filter('bkap_save_product_settings', array(&$this, 'tour_settings_save'),10,2);
 			add_action( 'woocommerce_single_product_summary', array(&$this, 'wc_add_tour_operator') );
-			add_action('bkap_after_listing_enabled', array(&$this, 'assign_tours'));
+			// Add the seasonal pricing tab
+			add_action('bkap_add_tabs',array(&$this,'tours_tab'),30,1);
+			add_action('bkap_after_listing_enabled', array(&$this, 'assign_tours'),30,1);
 			add_action( 'show_user_profile', array(&$this, 'extra_user_profile_fields') );
 			add_action( 'edit_user_profile', array(&$this, 'extra_user_profile_fields') );
 			add_action( 'personal_options_update', array(&$this, 'save_extra_user_profile_fields') );
@@ -350,15 +352,8 @@ if (!class_exists('tour_operators')) {
 					if(!empty($results_check )) {
 						foreach($results_check as $res) {
 							$product_id = $res->post_id;
-				//			$booking_settings = get_post_meta($product_id, 'woocommerce_booking_settings', true);
 					
 							$user_capab = get_user_meta(get_current_user_id(),'wp_capabilities');
-							
-					/*		if(!isset($booking_settings["booking_tour_operator"]) ||(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]!=get_current_user_id()))
-							$flag = false;
-							elseif(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]==get_current_user_id())
-							{$flag = true;
-							}*/
 							if (array_key_exists('administrator',$user_capab[0])) {
 								$flag = true;
 							}
@@ -370,7 +365,6 @@ if (!class_exists('tour_operators')) {
 					
 					if(!$flag) {
 				   		unset($all_caps['edit_shop_orders']);
-			//	    	unset($all_caps['edit_published_shop_orders']);
 					 	unset($all_caps['edit_others_shop_orders']);
           			} 
 				}
@@ -414,7 +408,7 @@ if (!class_exists('tour_operators')) {
 			}
 		}
 		
-		function add_cart_item_data($cart_arr, $product_id) {
+		function tours_add_cart_item_data($cart_arr, $product_id) {
 			$booking_settings = get_post_meta($product_id, 'woocommerce_booking_settings', true);
 			if(isset($booking_settings['booking_show_comment']) && $booking_settings['booking_show_comment'] == 'on')
 				$cart_arr['comments'] = $_POST['comments'];
@@ -505,6 +499,15 @@ if (!class_exists('tour_operators')) {
 			}
 		}
 
+		/*********************************************************
+		 * Add the rental addon vertical tab
+		********************************************************/
+		function tours_tab($product_id) {
+			?>
+			<li><a id="tours"> <?php _e( 'Tour Operators', 'woocommerce-booking' );?> </a></li>
+			<?php
+		}
+		
 		function assign_tours($product_id){
 			$booking_settings = get_post_meta($product_id, 'woocommerce_booking_settings', true);
 
@@ -518,32 +521,11 @@ if (!class_exists('tour_operators')) {
 				$show_comment = $booking_settings["booking_show_comment"];
 			
 			?>
-			<script type="text/javascript">
-					jQuery(".woo-nav-tab-wrapper").append("<a href=\"javascript:void(0);\" class=\"nav-tab\" id=\"tours\" onclick=\"tab_tour_display('tours')\"> <?php _e( 'Tour Operators', 'woocommerce-booking' );?> </a>");
-					function tab_tour_display(id){
-
-						jQuery( "#tours_page").show();
-						jQuery( "#payments_page").hide();
-						jQuery( "#date_time" ).hide();
-						jQuery( "#listing_page" ).hide();
-						jQuery( "#seasonal_pricing" ).hide();
-						jQuery( "#block_booking_page").hide();
-						jQuery( "#block_booking_price_page").hide();
-						jQuery( "#list" ).attr("class","nav-tab");
-						jQuery( "#addnew" ).attr("class","nav-tab");
-						jQuery( "#payments" ).attr("class","nav-tab");
-						jQuery( "seasonalpricing" ).attr("class","nav-tab");
-						jQuery( "#block_booking" ).attr("class","nav-tab");
-						jQuery( "#block_booking_price" ).attr("class","nav-tab");
-						jQuery( "#tours" ).attr("class","nav-tab nav-tab-active");
-					
-					}
-				</script>
 			<div id="tours_page" style="display:none;">
 			<table class='form-table'>
 			<tr id="tour_operators">
 			<th>
-			<label for="booking_tour_operator"> <b> <?php _e( 'Select Tour Operator:', 'woocommerce-booking' );?> </b> </label>
+			<label for="booking_tour_operator">  <?php _e( 'Select Tour Operator:', 'woocommerce-booking' );?> </label>
 
 			</th>
 
@@ -581,22 +563,24 @@ if (!class_exists('tour_operators')) {
 			</tr>
 			<tr>
 			<th>
-			<label for="booking_tour_operator"> <b> <?php _e( 'Show Tour Operator:', 'woocommerce-booking' );?> </b> </label>
+			<label for="booking_tour_operator"> <?php _e( 'Show Tour Operator:', 'woocommerce-booking' );?> </label>
 
 			</th>
 
 			<td>
-			<input type="checkbox" name="show_tour_operator" id="show_tour_operator" value="yes" <?php echo $tour_show;?>></input><img class="help_tip" width="16" height="16" data-tip="<?php _e('Please select this checkbox if you want to show Tour Operator on product page', 'woocommerce-booking');?>" src="<?php echo plugins_url() ;?>/woocommerce/assets/images/help.png"/>
+			<input type="checkbox" name="show_tour_operator" id="show_tour_operator" value="yes" <?php echo $tour_show;?>></input>
+			<img class="help_tip" width="16" height="16" style="margin-left:128px;" data-tip="<?php _e('Please select this checkbox if you want to show Tour Operator on product page', 'woocommerce-booking');?>" src="<?php echo plugins_url() ;?>/woocommerce/assets/images/help.png"/>
 				</td>
 			</tr>
 			<tr>
 			<th>
-			<label for="booking_show_comment"> <b> <?php _e( 'Show Comment Field:', 'woocommerce-booking' );?> </b> </label>
+			<label for="booking_show_comment"> <?php _e( 'Show Comment Field:', 'woocommerce-booking' );?> </label>
 
 			</th>
 
 			<td>
-			<input type="checkbox" name="booking_show_comment" id="booking_show_comment" value="yes" <?php echo $comment_show;?>></input><img class="help_tip" width="16" height="16" data-tip="<?php _e('Please select this checkbox if you want to show comment field on product page', 'woocommerce-booking');?>" src="<?php echo plugins_url() ;?>/woocommerce/assets/images/help.png"/>
+			<input type="checkbox" name="booking_show_comment" id="booking_show_comment" value="yes" <?php echo $comment_show;?>></input>
+			<img class="help_tip" width="16" height="16" style="margin-left:128px;" data-tip="<?php _e('Please select this checkbox if you want to show comment field on product page', 'woocommerce-booking');?>" src="<?php echo plugins_url() ;?>/woocommerce/assets/images/help.png"/>
 				</td>
 			</tr>
 			</table>
@@ -877,6 +861,7 @@ if (!class_exists('tour_operators')) {
 							<td>".$start_date."</td>
 							<td>".$end_date."</td>
 							<td>".$booking_time."</td>
+							<td>".$items_value['qty']."</td>
 							<td>".$items_value['line_total']."</td>
 							<td>".$order->completed_date."</td>
 							<td><a href=\"post.php?post=". $id_value->order_id."&action=edit\">View Order</a></td>
@@ -966,7 +951,9 @@ if (!class_exists('tour_operators')) {
 						<th><?php _e( 'Check-out Date' , 'woocommerce-booking' ); ?></th>
 
 						<th><?php _e( 'Booking Time' , 'woocommerce-booking' ); ?></th>
-
+						
+						<th><?php _e( 'Quantity' , 'woocommerce-booking' ); ?></th>
+						
 						<th><?php _e( 'Amount' , 'woocommerce-booking' ); ?></th>
 
 						<th><?php _e( 'Booking Date' , 'woocommerce-booking' ); ?></th>
@@ -987,13 +974,7 @@ if (!class_exists('tour_operators')) {
 
 			</div>
 
-			<?php
-
-				
-
-						
-
-							
+			<?php						
 			}
 		}
 	}
