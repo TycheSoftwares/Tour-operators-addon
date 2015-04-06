@@ -14,6 +14,8 @@ $ExampleUpdateChecker = new PluginUpdateChecker(
 	__FILE__
 );*/
 
+include('print-tickets.php');
+
 global $TourUpdateChecker;
 $TourUpdateChecker = '1.3';
 
@@ -83,6 +85,17 @@ if (!class_exists('tour_operators')) {
 			
             add_filter('user_has_cap', array($this, 'user_has_cap'), 10, 3);
             
+            //Hook to add checkbox for send tickets to tour operators
+            add_action('bkap_after_global_holiday_field', array('tour_operators_print_tickets','checkbox_settings'));
+            add_filter('bkap_save_global_settings',array('tour_operators_print_tickets','save_global_settings'), 10, 1);
+            add_action('woocommerce_order_status_completed',array('tour_operators_print_tickets','send_tickets'), 10, 1);
+            if ( get_option( 'woocommerce_version' ) >= "2.3" ) {
+            	add_action( 'woocommerce_email_customer_details', array('tour_operators_print_tickets','tour_operators_details'), 11, 3 );
+            }
+            else {
+            	add_action( 'woocommerce_email_after_order_table', array('tour_operators_print_tickets','tour_operators_details'), 11, 3 );
+            }
+
     		add_action('admin_init', array(&$this, 'edd_sample_register_option_tour'));
 			add_action('admin_init', array(&$this, 'edd_sample_deactivate_license_tour'));
 			add_action('admin_init', array(&$this, 'edd_sample_activate_license_tour'));
