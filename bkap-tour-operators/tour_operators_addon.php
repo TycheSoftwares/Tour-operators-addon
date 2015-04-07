@@ -374,8 +374,9 @@ if (!class_exists('tour_operators')) {
 								$flag = false;
 							}
 						}
+					} else {
+						$flag = true;
 					}
-					
 					if(!$flag) {
 				   		unset($all_caps['edit_shop_orders']);
 					 	unset($all_caps['edit_others_shop_orders']);
