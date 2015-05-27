@@ -6,16 +6,18 @@ class tour_operators_print_tickets {
 		$saved_settings = json_decode(get_option('woocommerce_booking_global_settings'));
 		?>
 		<tr>
-			<th><label for="booking_send_tickets_to_tour_operators"><b><?php _e('Send tickets to Tour operators:', 'woocommerce-booking');?></b></label></th>
+			<th><label for="booking_send_tickets_to_tour_operators"><b><?php _e('Send Notification emails to Tour operators:', 'woocommerce-booking');?></b></label></th>
 			<td>
 	    	<?php
 		   	$send_tickets = ""; 
 			if (isset($saved_settings->booking_send_tickets_to_tour_operators) && $saved_settings->booking_send_tickets_to_tour_operators == 'on'){
 	    		$send_tickets = "checked";
+			} else if (!isset($saved_settings->booking_send_tickets_to_tour_operators)) {
+				$send_tickets = "checked";
 			}
 		    ?>
 		   	<input type="checkbox" id="booking_send_tickets_to_tour_operators" name="booking_send_tickets_to_tour_operators" <?php echo $send_tickets; ?>/>
-		 	<img class="help_tip" width="16" height="16" data-tip="<?php _e('Please select this checkbox if you want to send the tickets to tour operators.', 'woocommerce-booking');?>" src="<?php echo plugins_url() ;?>/woocommerce/assets/images/help.png" style="vertical-align:top;"/><br>
+		 	<img class="help_tip" width="16" height="16" data-tip="<?php _e('Please select this checkbox if you want to send notification emails to tour operators when the order is completed.', 'woocommerce-booking');?>" src="<?php echo plugins_url() ;?>/woocommerce/assets/images/help.png" style="vertical-align:top;"/><br>
 		    </td>
 		</tr>
 		<?php
@@ -30,7 +32,13 @@ class tour_operators_print_tickets {
 	
 	function send_tickets ($order_id){
 		$saved_settings = json_decode(get_option('woocommerce_booking_global_settings'));
-		if(isset($saved_settings->booking_send_tickets_to_tour_operators) && $saved_settings->booking_send_tickets_to_tour_operators == 'on')
+		$send_emails_to_tour_operators = '';
+		if(isset($saved_settings->booking_send_tickets_to_tour_operators)) {
+			$send_emails_to_tour_operators = $saved_settings->booking_send_tickets_to_tour_operators;
+		} else {
+			$send_emails_to_tour_operators = 'on';
+		}
+		if($send_emails_to_tour_operators == 'on')
 		{
 			$order_obj = new WC_order($order_id);
 			$order_items = $order_obj->get_items();
