@@ -68,12 +68,11 @@ if (!class_exists('tour_operators')) {
 		
 			add_filter('bkap_addon_add_cart_item_data', array(&$this, 'tours_add_cart_item_data'), 10, 2);
 			
-			//add_filter('operator_get_cart_item_from_session', array(&$this, 'get_cart_item_from_session'),10,2);
 			add_filter('bkap_get_item_data', array(&$this, 'get_item_data'), 10, 2 );
 			add_action('bkap_update_order', array(&$this, 'tours_order_item_meta'), 10,2);
 			add_filter('bkap_save_product_settings', array(&$this, 'tour_settings_save'),10,2);
 			add_action( 'woocommerce_single_product_summary', array(&$this, 'wc_add_tour_operator') );
-			// Add the seasonal pricing tab
+			// Add the tour operators tab
 			add_action('bkap_add_tabs',array(&$this,'tours_tab'),30,1);
 			add_action('bkap_after_listing_enabled', array(&$this, 'assign_tours'),30,1);
 			add_action( 'show_user_profile', array(&$this, 'extra_user_profile_fields') );
@@ -81,7 +80,10 @@ if (!class_exists('tour_operators')) {
 			add_action( 'personal_options_update', array(&$this, 'save_extra_user_profile_fields') );
 			add_action( 'edit_user_profile_update', array(&$this, 'save_extra_user_profile_fields') );
 			add_filter('the_posts', array(&$this, 'filter_posts') , 1 );
-		//	add_action('bkap_display_price_div', array(&$this, 'display_price'),10,1);
+			// tour operator data on the view bookings page
+			add_filter('bkap_bookings_table_data',array(&$this,'tour_column_data'),20,1);
+			// CSV file data
+			add_filter('bkap_bookings_export_data',array(&$this,'tours_generate_data_export'),20,1);
 			
             add_filter('user_has_cap', array($this, 'user_has_cap'), 10, 3);
             
@@ -553,7 +555,7 @@ if (!class_exists('tour_operators')) {
 			<?php
 									$blogusers = get_users('blog_id=1&orderby=nicename&role=tour_operator');
 			foreach ($blogusers as $user) {
-			if($booking_tour_operator == $user->ID)
+			if(isset($booking_tour_operator) && $booking_tour_operator == $user->ID)
 				$selected  = 'selected';
 				else
 				$selected = '';
@@ -561,11 +563,11 @@ if (!class_exists('tour_operators')) {
 			echo "<option value='".$user->ID."' $selected>".$user->user_login."</option>";
 			}
 			
-			if($show_tour_operator  == 'on')
+			if(isset($show_tour_operator) && $show_tour_operator  == 'on')
 			 $tour_show = 'checked';
 			else
 			 $tour_show = '';
-			if($show_comment  == 'on')
+			if(isset($show_comment) && $show_comment  == 'on')
 			 $comment_show = 'checked';
 			else
 			 $comment_show = '';
@@ -630,120 +632,6 @@ if (!class_exists('tour_operators')) {
 		}
 
 		function operator_tours_page(){
-		/*
-			if(isset($_GET["action"]) && $_GET["action"] == 'add'){
-			$error = $success = '';
-			if(isset($_POST["submit"]) && $_POST["submit"] == 'Submit'){
-
-			$user_name = $_POST["username"];
-			$user_email = $_POST["email"];
-			$password = $_POST["password"];
-			$user_id = username_exists( $user_name );
-			if ( !$user_id and email_exists($user_email) == false ) {
-			$random_password = wp_generate_password( $length=12, $include_standard_special_chars=false );
-			$user_id = wp_create_user( $user_name, $password, $user_email );
-			if($user_id>0)
-			{ $success = "Tour Operator is added successfully";
-			update_user_meta( $user_id, 'address', $_POST['address'] );
-			update_user_meta( $user_id, 'phone', $_POST['phone'] );
-			update_user_meta( $user_id, 'paypal', $_POST['paypal'] );
-			$u = new WP_User( $user_id );
-			$u->remove_role( 'subscriber' );
-
-			// Add role
-			$u->add_role( 'tour_operator' );
-			}else{
-				print_r($user_id);
-			}
-			} else {
-				$error = __('User already exists.');
-				
-			}
-			}
-			?>
-			<div class="wrap">
-			<?php if(!empty($success)){?>
-			<div id="message" class="updated fade"><p><strong><?php _e( $success, 'woocommerce-booking' ); ?></strong></p><p><span><a href="admin.php?page=manage_tours">Back to Tour Operator Page</a></div>
-			</div>
-			<?php } else{ 
-			if(!empty($error)){?>
-			
-			
-			<div id="message" class="updated fade"><p><strong><?php _e( $error, 'woocommerce-booking' ); ?></strong></p></div>
-			<?php } ?>
-			<h2>Add Tour Operator</h2>
-			<form action="" method="post" id="tour_operator">
-			<table class="wp-list-table" cellspacing="0">
-			<tr>
-			<th><label for="username"><?php _e("Username"); ?></label></th>
-			<td>
-			<input type="text" name="username" id="username" value="" class="regular-text" /><br />
-			<span class="description"><?php _e("Please enter username."); ?></span>
-			</td>
-			</tr>
-			<tr>
-			<th><label for="email"><?php _e("Email"); ?></label></th>
-			<td>
-			<input type="text" name="email" id="email" value="" class="regular-text" /><br />
-			<span class="description"><?php _e("Please enter email."); ?></span>
-			</td>
-			</tr>
-			<tr>
-			<th><label for="password"><?php _e("Password"); ?></label></th>
-			<td>
-			<input type="password" name="password" id="password" value="" class="regular-text" /><br />
-			<span class="description"><?php _e("Please enter password."); ?></span>
-			</td>
-			</tr>
-				<tr>
-			<th><label for="address"><?php _e("Address"); ?></label></th>
-			<td>
-			<input type="text" name="address" id="address" value="" class="regular-text" /><br />
-			<span class="description"><?php _e("Please enter address."); ?></span>
-			</td>
-			</tr>
-			<tr>
-			<th><label for="paypal"><?php _e("Paypal Account Number"); ?></label></th>
-			<td>
-			<input type="text" name="paypal" id="paypal" value="" class="regular-text" /><br />
-			<span class="description"><?php _e("Please enter Paypal account number."); ?></span>
-			</td>
-			</tr>
-			<tr>
-			<th><label for="paypal"><?php _e("Phone"); ?></label></th>
-			<td>
-			<input type="text" name="phone" id="phone" value="" class="regular-text" /><br />
-			<span class="description"><?php _e("Please enter Phone number."); ?></span>
-			</td>
-			</tr>
-				<tr>
-				<td colspan="2" align="center">
-				<input name="submit" type="submit" value="Submit">
-				</td>
-				</tr>
-				
-				</table>
-				</form>
-				</div>
-				<?php
-			}	
-			}else{
-			/*
-			$user_name='mari4';
-			$user_email = 'mari4@gmail.com';
-			$user_id = username_exists( $user_name );
-			if ( !$user_id and email_exists($user_email) == false ) {
-				$random_password = wp_generate_password( $length=12, $include_standard_special_chars=false );
-				$user_id = wp_create_user( $user_name, 'mari', $user_email );
-			} else {
-				$random_password = __('User already exists.  Password inherited.');
-			}
-			$u = new WP_User( $user_id );
-			$u->remove_role( 'subscriber' );
-
-			// Add role
-			$u->add_role( 'tour_operator' );
-			*/
 			?>
 			<div class="wrap">
 			<h2>
@@ -778,7 +666,6 @@ if (!class_exists('tour_operators')) {
 			</table>
 			</div>
 			<?php
-			//}
 		}
 
 
@@ -823,175 +710,35 @@ if (!class_exists('tour_operators')) {
 			<?php } 
 		}
 		function operator_bookings_page(){
-			global $wpdb;
-
-				
-
-			$query_order = "SELECT DISTINCT order_id FROM `" . $wpdb->prefix . "woocommerce_order_items`  ";
-
-			$order_results = $wpdb->get_results( $query_order );
-
-			
-
-			$var = $today_checkin_var = $today_checkout_var = $booking_time_ = "";
-
-			
-
-			$booking_time_label = bkap_get_book_t('book.item-cart-time');
-
-			
-				foreach ( $order_results as $id_key => $id_value )
-			{
-				$order = new WC_Order( $id_value->order_id );
+			// Call the View Bookings page function here, so all the entries are passed on...
+			view_bookings::bkap_woocommerce_history_page();
+		}
 		
-				$order_items = $order->get_items();
-		
-				$today_query = "SELECT * FROM `".$wpdb->prefix."booking_history` AS a1,`".$wpdb->prefix."booking_order_history` AS a2 WHERE a1.id = a2.booking_id AND a2.order_id = '".$id_value->order_id."'";
-				$results_date = $wpdb->get_results ( $today_query );
-				
-				$c = 0;
-				foreach ($order_items as $items_key => $items_value )
-				{
-					if(isset($items_value['product_id'])){
-						$booking_settings = get_post_meta($items_value['product_id'], 'woocommerce_booking_settings', true);
-						if(isset($booking_settings['booking_tour_operator']) &&  $booking_settings['booking_tour_operator'] == get_current_user_id()){
-							$start_date = $end_date = $booking_time = "";
-							if ( isset($results_date[$c]->start_date) )
-							{
-							if (isset($results_date[$c]) && isset($results_date[$c]->start_date) && ( $results_date[$c]->post_id == $items_value['product_id'] )) $start_date = $results_date[$c]->start_date;
-							
-							if (isset($results_date[$c]) && isset($results_date[$c]->end_date)) $end_date = $results_date[$c]->end_date;
-							
-							if ($start_date == '0000-00-00' || $start_date == '1970-01-01') $start_date = '';
-							if ($end_date == '0000-00-00' || $end_date == '1970-01-01') $end_date = '';
-							
-							if (isset($items_value['Booking Time']))
-							{
-								$booking_time = $items_value['Booking Time'];
-							}
-							
-							$var .= "<tr>
-							<td>".$id_value->order_id."</td>
-							<td>".$order->billing_first_name." ".$order->billing_last_name."</td>
-							<td>".$items_value['name']."</td>
-							<td>".$start_date."</td>
-							<td>".$end_date."</td>
-							<td>".$booking_time."</td>
-							<td>".$items_value['qty']."</td>
-							<td>".$items_value['line_total']."</td>
-							<td>".$order->completed_date."</td>
-							<td><a href=\"post.php?post=". $id_value->order_id."&action=edit\">View Order</a></td>
-							</tr>";
-
-								
-
-							
-
-						
-
-							if ( $start_date != "" ) $c++;
-
-							}
-
-						}
-					}
+		function tour_column_data($booking_data) {
+			foreach ($booking_data as $key => $value) {
+				$booking_settings = get_post_meta($value->product_id, 'woocommerce_booking_settings', true);
+				if(isset($booking_settings['booking_tour_operator']) &&  $booking_settings['booking_tour_operator'] == get_current_user_id()){
 				}
-
+				else {
+					// Unset the entries that do not belong to this tour operator (user)
+					unset($booking_data[$key]);
+				}
 			}
-			$swf_path = plugins_url()."/woocommerce-booking/TableTools/media/swf/copy_csv_xls.swf";
-			?>
-			<script>
-						
-						jQuery(document).ready(function() {
-						 	var oTable = jQuery('.datatable').dataTable( {
-									"bJQueryUI": true,
-									"sScrollX": "",
-									"bSortClasses": false,
-									"aaSorting": [[0,'desc']],
-									"bAutoWidth": true,
-									"bInfo": true,
-									"sScrollY": "100%",	
-									"sScrollX": "100%",
-									"bScrollCollapse": true,
-									"sPaginationType": "full_numbers",
-									"bRetrieve": true,
-									"oLanguage": {
-													"sSearch": "Search:",
-													"sInfo": "Showing _START_ to _END_ of_TOTAL_ entries",
-													"sInfoEmpty": "Showing 0 to 0 of 0 entries",
-													"sZeroRecords": "No matching records found",
-													"sInfoFiltered": "(filtered from _MAX_total entries)",
-													"sEmptyTable": "No data available in table",
-													"sLengthMenu": "Show _MENU_ entries",
-													"oPaginate": {
-																	"sFirst":    "First",
-																	"sPrevious": "Previous",
-																	"sNext":     "Next",
-																	"sLast":     "Last"
-																  }
-												 },
-									 "sDom": 'T<"clear"><"H"lfr>t<"F"ip>',
-							         "oTableTools": {
-											            "sSwfPath": "<?php echo plugins_url(); ?>/woocommerce-booking/TableTools/media/swf/copy_csv_xls_pdf.swf"
-											        }
-									 
-						} );
-					} );
-						
-						       
-						</script>
-						
-						
-			<div style="float: left;">
-
-			<h2><strong>All Bookings</strong></h2>
-
-			</div>
-
-			<div>
-
-			<table id="booking_history" class="display datatable" >
-
-				<thead>
-
-					<tr>
-
-						<th><?php _e( 'Order ID' , 'woocommerce-booking' ); ?></th>
-
-						<th><?php _e( 'Customer Name' , 'woocommerce-booking' ); ?></th>
-
-						<th><?php _e( 'Product Name' , 'woocommerce-booking' ); ?></th>
-
-						<th><?php _e( 'Check-in Date' , 'woocommerce-booking' ); ?></th>
-
-						<th><?php _e( 'Check-out Date' , 'woocommerce-booking' ); ?></th>
-
-						<th><?php _e( 'Booking Time' , 'woocommerce-booking' ); ?></th>
-						
-						<th><?php _e( 'Quantity' , 'woocommerce-booking' ); ?></th>
-						
-						<th><?php _e( 'Amount' , 'woocommerce-booking' ); ?></th>
-
-						<th><?php _e( 'Booking Date' , 'woocommerce-booking' ); ?></th>
-
-						<th><?php _e( 'Action' , 'woocommerce-booking' ); ?></th>
-
-					</tr>
-
-				</thead>
-
-				<tbody>
-
-					<?php echo $var;?>
-
-				</tbody>
-
-			</table>
-
-			</div>
-
-			<?php						
+			return $booking_data;
+		}
+		
+		function tours_generate_data_export($report) {
+			foreach ($report as $key => $value) {
+				$booking_settings = get_post_meta($value->product_id, 'woocommerce_booking_settings', true);
+				if(isset($booking_settings['booking_tour_operator']) &&  $booking_settings['booking_tour_operator'] == get_current_user_id()){
+				}
+				else {
+					// Unset the entries that do not belong to this tour operator (user)
+					unset($report[$key]);
+				}
 			}
+			return $report;
+		}
 		}
 	}
 	$tour_operators = new tour_operators();
