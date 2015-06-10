@@ -4,7 +4,7 @@ Plugin Name: Tour Operators Addon - WooCommerce Booking Plugin
 Plugin URI: http://www.tychesoftwares.com/store/premium-plugins/woocommerce-booking-plugin
 Description: This plugin lets you add and Mange Tour Operators.
 Version: 1.4
-Author: Ashok Rane
+Author: Tyche Softwares
 Author URI: http://www.tychesoftwares.com/
 */
 
