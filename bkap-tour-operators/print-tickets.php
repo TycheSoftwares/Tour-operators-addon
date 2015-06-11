@@ -2,7 +2,7 @@
 
 class tour_operators_print_tickets {
 	
-	function checkbox_settings() {
+	public static function checkbox_settings() {
 		$saved_settings = json_decode(get_option('woocommerce_booking_global_settings'));
 		?>
 		<tr>
@@ -23,14 +23,14 @@ class tour_operators_print_tickets {
 		<?php
 	}
 
-	function save_global_settings ( $booking_settings ){
+	public static function save_global_settings ( $booking_settings ){
 		if (isset($_POST['booking_send_tickets_to_tour_operators'])) {
     		$booking_settings->booking_send_tickets_to_tour_operators = $_POST['booking_send_tickets_to_tour_operators'];
 		}
 		return $booking_settings;
 	}
 	
-	function send_tickets ($order_id){
+	public static function send_tickets ($order_id){
 		$saved_settings = json_decode(get_option('woocommerce_booking_global_settings'));
 		$send_emails_to_tour_operators = '';
 		if(isset($saved_settings->booking_send_tickets_to_tour_operators)) {
@@ -223,7 +223,7 @@ class tour_operators_print_tickets {
 		}
 	}
 	
-	function tour_operators_details( $order, $sent_to_admin = false, $plain_text = false ) {
+	public static function tour_operators_details( $order, $sent_to_admin = false, $plain_text = false ) {
 		$order_items = $order->get_items();
 		$booking_date_label = get_option('book.item-meta-date');
 		
