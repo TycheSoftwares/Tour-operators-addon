@@ -716,12 +716,14 @@ if (!class_exists('tour_operators')) {
 		
 		function tour_column_data($booking_data) {
 			foreach ($booking_data as $key => $value) {
-				$booking_settings = get_post_meta($value->product_id, 'woocommerce_booking_settings', true);
-				if(isset($booking_settings['booking_tour_operator']) &&  $booking_settings['booking_tour_operator'] == get_current_user_id()){
-				}
-				else {
-					// Unset the entries that do not belong to this tour operator (user)
-					unset($booking_data[$key]);
+				if ( !is_admin() ) {
+					$booking_settings = get_post_meta($value->product_id, 'woocommerce_booking_settings', true);
+					if(isset($booking_settings['booking_tour_operator']) &&  $booking_settings['booking_tour_operator'] == get_current_user_id()){
+					}
+					else {
+						// Unset the entries that do not belong to this tour operator (user)
+						unset($booking_data[$key]);
+					}
 				}
 			}
 			return $booking_data;
@@ -729,12 +731,14 @@ if (!class_exists('tour_operators')) {
 		
 		function tours_generate_data_export($report) {
 			foreach ($report as $key => $value) {
-				$booking_settings = get_post_meta($value->product_id, 'woocommerce_booking_settings', true);
-				if(isset($booking_settings['booking_tour_operator']) &&  $booking_settings['booking_tour_operator'] == get_current_user_id()){
-				}
-				else {
-					// Unset the entries that do not belong to this tour operator (user)
-					unset($report[$key]);
+				if ( !is_admin() ) {
+					$booking_settings = get_post_meta($value->product_id, 'woocommerce_booking_settings', true);
+					if(isset($booking_settings['booking_tour_operator']) &&  $booking_settings['booking_tour_operator'] == get_current_user_id()){
+					}
+					else {
+						// Unset the entries that do not belong to this tour operator (user)
+						unset($report[$key]);
+					}
 				}
 			}
 			return $report;
