@@ -49,7 +49,10 @@ class tour_operators_print_tickets {
 				if(isset($booking_settings['booking_tour_operator'])) {
 					$tour_operator = $booking_settings['booking_tour_operator'];
 					$tour_operator_data = get_userdata($tour_operator);
-					$tour_operator_email = $tour_operator_data->user_email;
+					$tour_operator_email = '';
+					if (isset($tour_operator_data->user_email)) {
+						$tour_operator_email = $tour_operator_data->user_email;
+					}
 				}
 				else {
 					$tour_operator = '';
