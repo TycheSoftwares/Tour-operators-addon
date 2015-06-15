@@ -429,7 +429,12 @@ if (!class_exists('tour_operators')) {
 		function tours_add_cart_item_data($cart_arr, $product_id) {
 			$booking_settings = get_post_meta($product_id, 'woocommerce_booking_settings', true);
 			if(isset($booking_settings['booking_show_comment']) && $booking_settings['booking_show_comment'] == 'on')
-				$cart_arr['comments'] = $_POST['comments'];
+				if (isset($_POST['comments'])) {
+					$cart_arr['comments'] = $_POST['comments'];
+				}
+				else {
+					$cart_arr['comments'] = '';
+				}
 	
 			return $cart_arr;
 		
