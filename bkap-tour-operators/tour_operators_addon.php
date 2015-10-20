@@ -63,6 +63,9 @@ if (!class_exists('tour_operators')) {
 		public function __construct() {
 			register_activation_hook( __FILE__, array(&$this, 'operators_activate'));
 			register_deactivation_hook( __FILE__, array(&$this, 'operators_deactivate'));
+			
+			add_action( 'admin_notices', array( &$this, 'tour_operator_error_notice' ) );
+			
 			add_action('bkap_add_submenu', array(&$this, 'operator_tour_submenu'), 11 );
 			add_action('bkap_before_add_to_cart_button',array(&$this, 'add_comment_field'), 10, 1);
 		
@@ -101,8 +104,14 @@ if (!class_exists('tour_operators')) {
     		add_action('admin_init', array(&$this, 'edd_sample_register_option_tour'));
 			add_action('admin_init', array(&$this, 'edd_sample_deactivate_license_tour'));
 			add_action('admin_init', array(&$this, 'edd_sample_activate_license_tour'));
-	}
+	   }
 		
+	   function tour_operator_error_notice() {
+	       if ( !is_plugin_active( 'woocommerce-booking/woocommerce-booking.php' ) ) {
+	           echo "<div class=\"error\"><p>Tour Operators Addon - WooCommerce Booking Plugin is enabled but not effective. It requires WooCommerce Booking and Appointment plugin in order to work.</p></div>";
+	       }
+	   }
+	   
 	function edd_sample_activate_license_tour() {
 					
 				// listen for our activate button to be clicked
