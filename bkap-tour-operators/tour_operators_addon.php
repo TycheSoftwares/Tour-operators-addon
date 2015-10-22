@@ -729,8 +729,9 @@ if (!class_exists('tour_operators')) {
 		}
 		
 		function tour_column_data($booking_data) {
-			foreach ($booking_data as $key => $value) {
-				if ( !is_admin() ) {
+			$user = new WP_User( get_current_user_id() );
+			foreach( $booking_data as $key => $value ) {
+				if( $user->roles[0] == 'tour_operator' ) {
 					$booking_settings = get_post_meta($value->product_id, 'woocommerce_booking_settings', true);
 					if(isset($booking_settings['booking_tour_operator']) &&  $booking_settings['booking_tour_operator'] == get_current_user_id()){
 					}
@@ -744,8 +745,9 @@ if (!class_exists('tour_operators')) {
 		}
 		
 		function tours_generate_data_export($report) {
-			foreach ($report as $key => $value) {
-				if ( !is_admin() ) {
+			$user = new WP_User( get_current_user_id() );
+			foreach( $report as $key => $value ) {
+				if( $user->roles[0] == 'tour_operator' ) {
 					$booking_settings = get_post_meta($value->product_id, 'woocommerce_booking_settings', true);
 					if(isset($booking_settings['booking_tour_operator']) &&  $booking_settings['booking_tour_operator'] == get_current_user_id()){
 					}
