@@ -459,10 +459,10 @@ if (!class_exists('tour_operators')) {
 			}*/
 		function get_cart_item_from_session( $cart_item, $values ) {
 		
-			if (isset($values['booking'])) :
-				$cart_item['booking'] = $values['booking'];
+			if (isset($values['bkap_booking'])) :
+				$cart_item['bkap_booking'] = $values['bkap_booking'];
 				$booking_settings = get_post_meta($cart_item['product_id'], 'woocommerce_booking_settings', true);
-				if($cart_item['booking'][0]['comments'] != '') {
+				if($cart_item['bkap_booking'][0]['comments'] != '') {
 					$cart_item = $this->add_cart_item( $cart_item );
 				}
 			endif;
@@ -472,9 +472,9 @@ if (!class_exists('tour_operators')) {
 		function get_item_data( $other_data, $cart_item ) {
 			$booking_settings = get_post_meta($cart_item['product_id'], 'woocommerce_booking_settings', true);
 			if(isset($booking_settings["booking_show_comment"]) && $booking_settings["booking_show_comment"] == 'on' && is_plugin_active('bkap-tour-operators/tour_operators_addon.php')) { 
-				if (isset($cart_item['booking'])) :
+				if (isset($cart_item['bkap_booking'])) :
 					$price = '';
-					foreach ($cart_item['booking'] as $booking) :
+					foreach ($cart_item['bkap_booking'] as $booking) :
 						if(isset($booking['comments'])):
 							$price = $booking['comments'];
 						endif;
@@ -494,11 +494,11 @@ if (!class_exists('tour_operators')) {
 		function tours_order_item_meta( $values,$order) {
 			global $wpdb;
 			$product_id = $values['product_id'];
-			$booking = $values['booking'];
+			$booking = $values['bkap_booking'];
 			$order_item_id = $order->order_item_id;
 			$order_id = $order->order_id;
-			if(isset($values['booking'][0]['comments']) && !empty($values['booking'][0]['comments'])) {
-				woocommerce_add_order_item_meta($order_item_id,  bkap_get_book_t('book.item-comments'),$values['booking'][0]['comments'], true );
+			if(isset($values['bkap_booking'][0]['comments']) && !empty($values['bkap_booking'][0]['comments'])) {
+				woocommerce_add_order_item_meta($order_item_id,  bkap_get_book_t('book.item-comments'),$values['bkap_booking'][0]['comments'], true );
 			}	
 		}
 				
