@@ -90,6 +90,9 @@ if (!class_exists('tour_operators')) {
 			
             add_filter('user_has_cap', array($this, 'user_has_cap'), 10, 3);
             
+            // Re-direct to the View Booking page
+            add_action( 'admin_init', array( &$this, 'tours_load_view_booking_page' ) );
+            	
             //Hook to add checkbox for send tickets to tour operators
             add_action('bkap_after_global_holiday_field', array('tour_operators_print_tickets','checkbox_settings'));
             add_filter('bkap_save_global_settings',array('tour_operators_print_tickets','save_global_settings'), 10, 1);
@@ -362,6 +365,9 @@ if (!class_exists('tour_operators')) {
 		function user_has_cap($all_caps, $caps, $args){
 			 global $post,$shop_order;
 			 global $wpdb;
+			 
+			 $user_capab = get_user_meta(get_current_user_id(),'wp_capabilities');
+			 
 			 if(isset($post->ID)) {
 				if($args[0] == 'edit_post') {
 					$flag = false;
@@ -377,8 +383,7 @@ if (!class_exists('tour_operators')) {
 						foreach($results_check as $res) {
 							$product_id = $res->post_id;
 					
-							$user_capab = get_user_meta(get_current_user_id(),'wp_capabilities');
-							if (array_key_exists('administrator',$user_capab[0])) {
+							if ( array_key_exists( 'administrator', $user_capab[0] ) || array_key_exists( 'tour_operator', $user_capab[0] ) ) {
 								$flag = true;
 							}
 							else {
@@ -758,6 +763,37 @@ if (!class_exists('tour_operators')) {
 				}
 			}
 			return $report;
+		}
+		
+		function tours_load_view_booking_page() {
+		    $url = '';
+		
+		    if ( isset( $_GET[ 'page' ] ) && $_GET[ 'page' ] == 'operator_bookings' ) {
+		        if ( isset( $_GET[ 'item_id' ] ) && $_GET[ 'item_id' ] != 0 ) {
+		
+		            ob_start();
+		            $templatefilename = 'approve-booking.php';
+		
+		            $path_array = explode( '/', dirname( __FILE__ ) );
+		            $plugin_name = array_pop( $path_array );
+		
+		            $path_array = implode( '/', $path_array );
+		
+		            if ( file_exists( $path_array . '/woocommerce-booking/' . $templatefilename ) ) {
+		
+		                $template = $path_array . '/woocommerce-booking/' . $templatefilename;
+		                include( $template );
+		            }
+		             
+		            $content = ob_get_contents();
+		            ob_end_clean();
+		
+		            $args = array( 'slug'    => 'edit-booking',
+		                'title'   => 'Edit Booking',
+		                'content' => $content );
+		            $pg = new bkap_approve_booking ( $args );
+		        }
+		    }
 		}
 		}
 	}
