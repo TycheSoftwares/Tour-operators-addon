@@ -68,7 +68,9 @@ if (!class_exists('tour_operators')) {
 			
 			add_action('bkap_add_submenu', array(&$this, 'operator_tour_submenu'), 11 );
 			add_action('bkap_before_add_to_cart_button',array(&$this, 'add_comment_field'), 10, 1);
-		
+
+			add_action( 'admin_enqueue_scripts', array(&$this, 'tours_enqueue_scripts_css' ) );
+			
 			add_filter('bkap_addon_add_cart_item_data', array(&$this, 'tours_add_cart_item_data'), 10, 2);
 			
 			add_filter('bkap_get_item_data', array(&$this, 'get_item_data'), 10, 2 );
@@ -78,9 +80,9 @@ if (!class_exists('tour_operators')) {
 			// Add the tour operators tab
 			add_action('bkap_add_tabs',array(&$this,'tours_tab'),30,1);
 			add_action('bkap_after_listing_enabled', array(&$this, 'assign_tours'),30,1);
-			add_action( 'show_user_profile', array(&$this, 'extra_user_profile_fields') );
+			add_action( 'show_user_profile', array( &$this, 'extra_user_profile_fields' ), 10, 1 );
 			add_action( 'edit_user_profile', array(&$this, 'extra_user_profile_fields') );
-			add_action( 'personal_options_update', array(&$this, 'save_extra_user_profile_fields') );
+			add_action( 'personal_options_update', array( &$this, 'save_extra_user_profile_fields' ), 10, 1 );
 			add_action( 'edit_user_profile_update', array(&$this, 'save_extra_user_profile_fields') );
 			add_filter('the_posts', array(&$this, 'filter_posts') , 1 );
 			// tour operator data on the view bookings page
@@ -92,6 +94,14 @@ if (!class_exists('tour_operators')) {
             
             // Re-direct to the View Booking page
             add_action( 'admin_init', array( &$this, 'tours_load_view_booking_page' ) );
+            	
+            // add gcal settings
+            add_action( 'show_user_profile', array( &$this, 'tours_gcal_settings' ), 11, 1 );
+            add_action( 'personal_options_update', array(&$this, 'tours_save_gcal_fields'), 11, 1 );
+            	
+            // include files for GCal
+            add_action( 'init', array( &$this, 'tours_include_files' ) );
+            add_action( 'admin_init', array( &$this, 'tours_include_files' ) );
             	
             //Hook to add checkbox for send tickets to tour operators
             add_action('bkap_after_global_holiday_field', array('tour_operators_print_tickets','checkbox_settings'));
@@ -113,6 +123,10 @@ if (!class_exists('tour_operators')) {
 	       if ( !is_plugin_active( 'woocommerce-booking/woocommerce-booking.php' ) ) {
 	           echo "<div class=\"error\"><p>Tour Operators Addon is enabled but not effective. It requires WooCommerce Booking and Appointment plugin in order to work.</p></div>";
 	       }
+	   }
+	   
+	   function tours_include_files() {
+	       include_once( 'tours-calendar-sync.php' );
 	   }
 	   
 	function edd_sample_activate_license_tour() {
@@ -498,13 +512,15 @@ if (!class_exists('tour_operators')) {
 			
 		function tours_order_item_meta( $values,$order) {
 			global $wpdb;
-			$product_id = $values['product_id'];
-			$booking = $values['bkap_booking'];
-			$order_item_id = $order->order_item_id;
-			$order_id = $order->order_id;
-			if(isset($values['bkap_booking'][0]['comments']) && !empty($values['bkap_booking'][0]['comments'])) {
-				woocommerce_add_order_item_meta($order_item_id,  bkap_get_book_t('book.item-comments'),$values['bkap_booking'][0]['comments'], true );
-			}	
+			$product_id = $values[ 'product_id' ];
+			if ( isset( $values[ 'bkap_booking' ] ) ) {
+    			$booking = $values[ 'bkap_booking' ];
+    			$order_item_id = $order->order_item_id;
+    			$order_id = $order->order_id;
+    			if( isset( $values[ 'bkap_booking' ][ 0 ][ 'comments' ] ) && !empty( $values[ 'bkap_booking' ][ 0 ][ 'comments' ] ) ) {
+    				wc_add_order_item_meta( $order_item_id, bkap_get_book_t( 'book.item-comments' ), $values[ 'bkap_booking' ][ 0 ][ 'comments' ], true );
+    			}	
+			}
 		}
 				
 
@@ -628,8 +644,7 @@ if (!class_exists('tour_operators')) {
 
 
 
-		function operator_tour_submenu() 
-		{
+		function operator_tour_submenu() {
 			add_submenu_page(
 				'booking_settings', // Third party plugin Slug 
 				'Tour Operators', 
@@ -691,7 +706,10 @@ if (!class_exists('tour_operators')) {
 
 		function save_extra_user_profile_fields( $user_id ) {
 
-			if ( !current_user_can( 'edit_user', $user_id ) ) { return false; }
+			if ( !current_user_can( 'edit_user', $user_id ) ) { 
+			    return false; 
+			}
+			
 			$userid =  new WP_User( $user_id );
 			if($userid->roles[0]=='tour_operator'){
 				update_user_meta( $user_id, 'address', $_POST['address'] );
@@ -699,6 +717,7 @@ if (!class_exists('tour_operators')) {
 				update_user_meta( $user_id, 'phone', $_POST['phone'] );
 			}
 		}
+		
 		function extra_user_profile_fields( $user ) { 
 			$userid =  new WP_User( $user->ID );
 			if($userid->roles[0]=='tour_operator'){?>
@@ -726,7 +745,8 @@ if (!class_exists('tour_operators')) {
 			</td>
 			</tr>
 			</table>
-			<?php } 
+			<?php 
+			} 
 		}
 		function operator_bookings_page(){
 			// Call the View Bookings page function here, so all the entries are passed on...
@@ -795,6 +815,600 @@ if (!class_exists('tour_operators')) {
 		        }
 		    }
 		}
+		
+		function tours_enqueue_scripts_css() {
+		
+		    $plugin_version_number = get_option( 'woocommerce_booking_db_version' );
+		
+		    $user_capab = get_user_meta(get_current_user_id(),'wp_capabilities');
+		
+		    // check current screen
+		    $screen = get_current_screen();
+		    	
+		    if ('profile' == $screen->base && 'yes' == get_option( 'bkap_allow_tour_operator_gcal_api' ) && array_key_exists( 'tour_operator', $user_capab[0] ) ) {
+		        wp_enqueue_style( 'tours-style', plugins_url('/css/profile.class.css', __FILE__ ) , '', $plugin_version_number , false );
+		    }
+		}
+		
+		function tours_gcal_settings( $user ) {
+		
+		    $userid =  new WP_User( $user->ID );
+		
+		    if ( 'yes' == get_option( 'bkap_allow_tour_operator_gcal_api' ) && $userid->roles[ 0 ] == 'tour_operator' ) {
+		        ?>
+		    		    
+		        		    <h3><?php _e( 'WooCommerce Booking and Appointment Google Calendar Sync Settings', 'woocommerce-booking' );?></h3>
+		        		    
+		        		    <h4><?php _e( 'Tour Operator Calendar Sync Settings', 'woocommerce-booking' ); ?></h4>
+		        		    <table class="form-table">
+		            			<tr>
+		                            <th><label for="tours_calendar_sync_integration_mode"><?php _e('Integration Mode', 'woocommerce-booking' ); ?></label></th>
+		            			<td>
+		            			<?php
+		
+		                			$sync_directly = "";
+		                			$sync_manually = "";
+		                			$sync_disable = "checked";
+		                			
+		                			$sync_setting = esc_attr( get_the_author_meta( 'tours_calendar_sync_integration_mode', $user->ID ) );
+		                			
+		                			if ( $sync_setting == 'manually' ) {
+		                			    $sync_manually = "checked";
+		                			    $sync_disable = "";
+		                			} else if( $sync_setting == 'directly' ) {
+		                			    $sync_directly = "checked";
+		                			    $sync_disable = "";
+		                			}
+		            			
+		            			?>
+		                            <input type="radio" name="tours_calendar_sync_integration_mode" id="tours_calendar_sync_integration_mode" value="directly" <?php echo $sync_directly; ?> /> <?php  _e( 'Sync Automatically', 'woocommerce-booking' ) ?> &nbsp;&nbsp;
+		                            <input type="radio" name="tours_calendar_sync_integration_mode" id="tours_calendar_sync_integration_mode" value="manually" <?php echo $sync_manually; ?> /> <?php  _e( 'Sync Manually', 'woocommerce-booking' ) ?> &nbsp;&nbsp;
+		                            <input type="radio" name="tours_calendar_sync_integration_mode" id="tours_calendar_sync_integration_mode" value="disabled" <?php echo $sync_disable; ?> /> <?php _e( 'Disabled', 'woocommerce-booking' ) ?>
+		    
+		                            <span class="description"><?php _e('<br>Select method of integration. "Sync Automatically" will add the booking events to the Google calendar, which is set in the "Calendar to be used" field, automatically when a customer places an order. <br>"Sync Manually" will add an "Add to Calendar" button in emails received by admin on New customer order and on the View Booking Calendar page.<br>"Disabled" will disable the integration with Google Calendar.<br>Note: Import of the events will work manually using .ics link.', 'woocommerce-booking' ); ?></span>
+		            			
+		                			<script type="text/javascript">
+		                                jQuery( document ).ready( function() {
+		                                    var isChecked = jQuery( "#tours_calendar_sync_integration_mode:checked" ).val();
+		                                    if( isChecked == "directly" ) {
+		                                       i = 0;
+		                                       jQuery( ".form-table" ).each( function() {
+		                                            if( i == 6 ) {
+		                                                k = 0;
+		                                                var row = jQuery( this ).find( "tr" );
+		                                                jQuery.each( row , function() {
+		                                                    if( k == 7 ) {
+		                                                        jQuery( this ).fadeOut();
+		                                                    } else {
+		                                                        jQuery( this ).fadeIn();
+		                                                    }
+		                                                    k++;
+		                                                });
+		                                            } else {
+		                                                jQuery( this ).fadeIn();
+		                                            }
+		                                            i++;
+		                                        } );
+		                                    } else if( isChecked == "manually" ) {
+		                                        i = 0;
+		                                        jQuery( ".form-table" ).each( function() {
+		                                            if( i == 6 ) {
+		                                                k = 0;
+		                                                var row = jQuery( this ).find( "tr" );
+		                                                jQuery.each( row , function() {
+		                                                	if( k != 7 && k != 0 ) {
+		                                                        jQuery( this ).fadeOut();
+		                                                    } else {
+		                                                        jQuery( this ).fadeIn();
+		                                                    }
+		                                                    k++;
+		                                                });
+		                                            } else {
+		                                                jQuery( this ).fadeIn();
+		                                            }
+		                                            i++;
+		                                        });
+		                                    } else if( isChecked == "disabled" ) {
+		                                        i = 0;
+		                                        jQuery( ".form-table" ).each( function() {
+		                                            if( i == 6 ) {
+		                                                k = 0;
+		                                                var row = jQuery( this ).find( "tr" );
+		                                                jQuery.each( row , function() {
+		                                                	if( k != 0 ) {
+		                                                        jQuery( this ).fadeOut();
+		                                                    } else {
+		                                                        jQuery( this ).fadeIn();
+		                                                    }
+		                                                    k++;
+		                                                });
+		                                            } else {
+		                                                jQuery( this ).fadeIn();
+		                                            }
+		                                            i++;
+		                                        });
+		                                    }
+		                                    jQuery( "input[type=radio][id=tours_calendar_sync_integration_mode]" ).change( function() {
+		                                        var isChecked = jQuery( this ).val();
+		                                        if( isChecked == "directly" ) {
+		                                            i = 0;
+		                                            jQuery( ".form-table" ).each( function() {
+		                                                if( i == 6 ) {
+		                                                    k = 0;
+		                                                    var row = jQuery( this ).find( "tr" );
+		                                                    jQuery.each( row , function() {
+		                                                        if( k == 7 ) {
+		                                                            jQuery( this ).fadeOut();
+		                                                        } else {
+		                                                            jQuery( this ).fadeIn();
+		                                                        }
+		                                                        k++;
+		                                                    });
+		                                                } else {
+		                                                    jQuery( this ).fadeIn();
+		                                                }
+		                                                i++;
+		                                            } );
+		                                        } else if( isChecked == "manually" ) {
+		                                            i = 0;
+		                                            jQuery( ".form-table" ).each( function() {
+		                                                if( i == 6 ) {
+		                                                    k = 0;
+		                                                    var row = jQuery( this ).find( "tr" );
+		                                                    jQuery.each( row , function() {
+		                                                        if( k != 7 && k != 0 ) {
+		                                                            jQuery( this ).fadeOut();
+		                                                        } else {
+		                                                            jQuery( this ).fadeIn();
+		                                                        }
+		                                                        k++;
+		                                                    });
+		                                                } else {
+		                                                    jQuery( this ).fadeIn();
+		                                                }
+		                                                i++;
+		                                            });
+		                                        } else if( isChecked == "disabled" ) {
+		                                            i = 0;
+		                                            jQuery( ".form-table" ).each( function() {
+		                                                if( i == 6 ) {
+		                                                    k = 0;
+		                                                    var row = jQuery( this ).find( "tr" );
+		                                                    jQuery.each( row , function() {
+		                                                        if( k != 0 ) {
+		                                                            jQuery( this ).fadeOut();
+		                                                        } else {
+		                                                            jQuery( this ).fadeIn();
+		                                                        }
+		                                                        k++;
+		                                                    });
+		                                                } else {
+		                                                    jQuery( this ).fadeIn();
+		                                                }
+		                                                i++;
+		                                            });
+		                                        }
+		                                    })
+		                                });
+		                            </script>
+		                        </td>
+		    
+		            			</tr>
+		            			
+		            			<tr>
+		                            <th><label for="tours_calendar_instructions"><?php _e('Instructions', 'woocommerce-booking' ); ?></label></th>
+		            			<td>
+		            			<?php 
+		            			_e( 'To set up Google Calendar API, please click on "Show me how" link and carefully follow these steps:
+		            			
+		                        <span class="description" ><a href="#tours-instructions" id="show_instructions" data-target="api-instructions" class="tours-info_trigger" title="' . __ ( 'Click to toggle instructions', 'woocommerce-booking') . '">' . __( 'Show me how', 'woocommerce-booking' ) . '</a></span>', 'woocommerce-booking' );
+		                        ?> <div class="description tours-info_target api-instructions" style="display: none;">
+		                                <ul style="list-style-type:decimal;">
+		                                    <li><?php _e( 'Google Calendar API requires php V5.3+ and some php extensions.', 'woocommerce-booking' ) ?> </li>
+		                                    <li><?php printf( __( 'Go to Google APIs console by clicking %s. Login to your Google account if you are not already logged in.', 'woocommerce-booking' ), '<a href="https://code.google.com/apis/console/" target="_blank">https://code.google.com/apis/console/</a>' ) ?></li>
+		                                    <li><?php _e( 'Create a new project using the left side pane. Click on \'Home\' option. Name the project "Bookings" (or use your chosen name instead).', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Click on API Manager from left side pane.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Click "Calendar API" under Google Apps APIs and Click on Enable button.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Go to "Credentials" menu in the left side pane and click on "New Credentials" dropdown.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Click on "OAuth client ID" option. Then click on Configure consent screen.', 'woocommerce-booking' )?></li>
+		                                    <li><?php _e( 'Enter a Product Name, e.g. Bookings and Appointments, inside the opening pop-up. Click Save.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Select "Web Application" option, enter the Web client name and create the client ID.', 'woocommerce-booking' )?></li>
+		                                    <li><?php _e( 'Click on New Credentials dropdown and select "Service account key".', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Click "Service account" and select "New service account" and enter the name. Now select key type as "P12" and create the service account.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'A file with extension .p12 will be downloaded.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php printf( __( 'Using your FTP client program, copy this key file to folder: %s . This file is required as you will grant access to your Google Calendar account even if you are not online. So this file serves as a proof of your consent to access to your Google calendar account. Note: This file cannot be uploaded in any other way. If you do not have FTP access, ask the website admin to do it for you.', 'woocommerce-booking' ), plugin_dir_path( __FILE__ ) .'gcal/key/' ) ?></li>
+		                                    <li><?php _e( 'Enter the name of the key file to "Key file name" setting of Booking. Exclude the extention .p12.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Copy "Email address" setting from Manage service account of Google apis console and paste it to "Service account email address" setting of Booking.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php printf( __( 'Open your Google Calendar by clicking this link: %s', 'woocommerce-booking' ), '<a href="https://www.google.com/calendar/render" target="_blank">https://www.google.com/calendar/render</a>' ) ?></li>
+		                                    <li><?php _e( 'Create a new Calendar by selecting "my Calendars > Create new calendar" on left side pane. <b>Try NOT to use your primary calendar.</b>', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Give a name to the new calendar, e.g. Bookings calendar. <b>Check that Calendar Time Zone setting matches with time zone setting of your WordPress website.</b> Otherwise there will be a time shift.', 'woocommerce-booking' ) ?></li>		
+		                                    <li><?php _e( 'Paste already copied "Email address" setting from Manage service account of Google apis console to "Person" field under "Share with specific person".', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Set "Permission Settings" of this person as "Make changes to events".', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Click "Add Person".', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Click "Create Calendar".', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Select the created calendar and click "Calendar settings".', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Copy "Calendar ID" value on Calendar Address row.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Paste this value to "Calendar to be used" field of Booking settings.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Select the desired Integration mode: Sync Automatically or Sync Manually.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Click "Save Settings" on Booking settings.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'After these stages, you have set up Google Calendar API. To test the connection, click the "Test Connection" link.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'If you get a success message, you should see a test event inserted to the Google Calendar and you are ready to go. If you get an error message, double check your settings.', 'woocommerce-booking' ) ?></li>
+		                                </ul>
+		                            </div>
+		        
+		                        <script type="text/javascript">
+		                            function toggle_target (e) {
+		                            	if ( e && e.preventDefault ) { 
+		                                    e.preventDefault();
+		                                }
+		                            	if ( e && e.stopPropagation ) {
+		                                    e.stopPropagation();
+		                                }
+		                            	var target = jQuery(".tours-info_target.api-instructions" );
+		                            	if ( !target.length ) {
+		                                    return false;
+		                                }
+		                                
+		                            	if ( target.is( ":visible" ) ) {
+		                                    target.hide( "fast" );
+		                                } else {
+		                                    target.show( "fast" );
+		                                }
+		                            
+		                            	return false;
+		                            }
+		                            jQuery(function () {
+		                            	jQuery(document).on("click", ".tours-info_trigger", toggle_target);
+		                            });
+		                        </script>
+		            			</td>
+		            			</tr>
+		            			
+		            			<tr>
+		                            <th><label for="tours_calendar_key_file_name"><?php _e('Key file name', 'woocommerce-booking' ); ?></label></th>
+		            			<td>
+		            			<?php
+		
+		                			$gcal_key_file_arr = get_the_author_meta( 'tours_calendar_details_1', $user->ID );
+		                			
+		                			if( isset( $gcal_key_file_arr[ 'tours_calendar_key_file_name' ] ) ) {
+		                			    $gcal_key_file = $gcal_key_file_arr[ 'tours_calendar_key_file_name' ];
+		                			} else {
+		                			    $gcal_key_file = '';
+		                			}
+		                			
+		            			?>
+		                            <input id="tours_calendar_details_1[tours_calendar_key_file_name]" name= "tours_calendar_details_1[tours_calendar_key_file_name]" value="<?php echo $gcal_key_file; ?>" size="90" name="gcal_key_file" type="text" />
+		                            
+		                            <span class="description"><?php _e('<br>Enter key file name here without extention, e.g. ab12345678901234567890-privatekey.', 'woocommerce-booking' ); ?></span>
+		            			</td>
+		            			</tr>
+		            			
+		            			<tr>
+		                            <th><label for="tours_calendar_service_acc_email_address"><?php _e('Service account email address', 'woocommerce-booking' ); ?></label></th>
+		            			<td>
+		            			<?php
+		
+		                		    $gcal_service_account_arr = get_the_author_meta( 'tours_calendar_details_1', $user->ID );
+		                            if( isset( $gcal_service_account_arr[ 'tours_calendar_service_acc_email_address' ] ) ) {
+		                                $gcal_service_account = $gcal_service_account_arr[ 'tours_calendar_service_acc_email_address' ];
+		                            } else {
+		                                $gcal_service_account = '';
+		                            }
+		                			
+		            			?>
+		                            <input id="tours_calendar_details_1[tours_calendar_service_acc_email_address]" name="tours_calendar_details_1[tours_calendar_service_acc_email_address]" value="<?php echo $gcal_service_account; ?>" size="90" name="gcal_service_account" type="text"/>
+		                            
+		                            <span class="description"><?php _e('<br>Enter Service account email address here, e.g. 1234567890@developer.gserviceaccount.com.', 'woocommerce-booking' ); ?></span>
+		            			</td>
+		            			</tr>
+		            			
+		            			<tr>
+		                            <th><label for="tours_calendar_id"><?php _e('Calendar to be used', 'woocommerce-booking' ); ?></label></th>
+		            			<td>
+		            			<?php
+		
+		            			$gcal_selected_calendar_arr = get_the_author_meta( 'tours_calendar_details_1', $user->ID );
+		            			if( isset( $gcal_selected_calendar_arr[ 'tours_calendar_id' ] ) ) {
+		            			    $gcal_selected_calendar = $gcal_selected_calendar_arr[ 'tours_calendar_id' ];
+		            			} else {
+		            			    $gcal_selected_calendar = '';
+		            			}
+		            
+		            			?>
+		                            <input id="tours_calendar_details_1[tours_calendar_id]" name="tours_calendar_details_1[tours_calendar_id]" value="<?php echo $gcal_selected_calendar; ?>" size="90" name="gcal_selected_calendar" type="text" />
+		                            
+		                            <span class="description"><?php _e('<br>Enter the ID of the calendar in which your bookings will be saved, e.g. abcdefg1234567890@group.calendar.google.com.', 'woocommerce-booking' ); ?></span>
+		            			</td>
+		            			</tr>
+		            			
+		            			<tr>
+		            			<th></th>
+		            			<td>
+		                            <script type='text/javascript'>
+		                                jQuery( document ).on( 'click', '#test_connection', function( e ) {
+		                                    e.preventDefault();
+		                                    var data = {
+		                             		   gcal_api_test_result: '',
+		                              		  gcal_api_pre_test: '',
+		                                	    gcal_api_test: 1,
+		                                	    user_id: <?php echo $user->ID; ?>,
+		                                	    action: 'display_nag'
+		                        	        };
+		                                    jQuery( '#test_connection_ajax_loader' ).show();
+		                                    jQuery.post( '<?php echo get_admin_url(); ?>/admin-ajax.php', data, function( response ) {
+		                                        jQuery( '#test_connection_message' ).html( response );
+		                                        jQuery( '#test_connection_ajax_loader' ).hide();
+		                                        });
+		                            
+		                                });
+		                        </script>
+		                			
+		                			<a href='profile.php' id='test_connection'> <?php _e( 'Test Connection', 'woocommerce-booking' ); ?></a>
+		                            <img src='<?php echo plugins_url(); ?>/woocommerce-booking/images/ajax-loader.gif' id='test_connection_ajax_loader'>
+		                            <div id='test_connection_message'></div>
+		            			</td>
+		            			</tr>
+		            			
+		            			<tr>
+		                            <th><label for="tours_add_to_calendar_view_booking"><?php _e('Show Add to Calendar button on View Bookings page', 'woocommerce-booking' ); ?></label></th>
+		            			<td>
+		            			<?php
+		            			
+		                		    $tours_add_to_calendar_view_bookings = "";
+		                            if( 'on' == esc_attr( get_the_author_meta( 'tours_add_to_calendar_view_booking', $user->ID ) ) ) {
+		                                $tours_add_to_calendar_view_bookings = "checked";
+		                            }
+		            
+		            			?>
+		                            <input type="checkbox" name="tours_add_to_calendar_view_booking" id="tours_add_to_calendar_view_booking" value="on" <?php echo $tours_add_to_calendar_view_bookings; ?> />
+		                            
+		                            <span class="description"><?php _e('Show "Add to Calendar" button on the Booking -> View Bookings page.<br><i>Note: This button can be used to export the already placed orders with future bookings from the current date to the calendar used above.</i>', 'woocommerce-booking' ); ?></span>
+		            			</td>
+		            			</tr>
+		            			
+		            			<tr>
+		                            <th><label for="tours_add_to_calendar_email_notification"><?php _e('Show Add to Calendar button in New Order email notification', 'woocommerce-booking' ); ?></label></th>
+		            			<td>
+		            			<?php
+		            			
+		                		    $tours_add_to_calendar_email_notification = "";
+		                            if( "on" == esc_attr( get_the_author_meta( 'tours_add_to_calendar_email_notification', $user->ID ) ) ) {
+		                                $tours_add_to_calendar_email_notification = "checked";
+		                            }
+		            
+		            			?>
+		                            <input type="checkbox" name="tours_add_to_calendar_email_notification" id="tours_add_to_calendar_email_notification" value="on" <?php echo $tours_add_to_calendar_email_notification; ?> />
+		                            
+		                            <span class="description"><?php _e('Show "Add to Calendar" button in the New Order email notification.', 'woocommerce-booking' ); ?></span>
+		            			</td>
+		            			</tr>
+		            			
+		        			</table>
+		        			
+		        			<h3><?php _e( 'Import Events', 'woocommerce-booking' ); ?></h3>
+		        			<br>
+		        			<?php _e( 'Events will be imported using the ICS Feed url. Each event will create a new WooCommerce Order. The event\'s date & time will be set as the item\'s Booking Date & Time. <br>Lockout will be updated for the product for the set Booking Date & Time.', 'woocommerce-booking' ); ?>
+		        		    <table class="form-table">
+		            			<tr>
+		                            <th><label for="tours_ics_feed_url_instructions"><?php _e('Instructions', 'woocommerce-booking' ); ?></label></th>
+		            			<td>
+		                            <?php _e( 'To set up Import events using ics feed urls, please click on "Show me how" link and carefully follow these steps:', 'woocommerce-booking' ); ?>
+		                            <span class="ics-feed-description" >
+		                            <a href="#tours-ics-feed-instructions" id="show_instructions" data-target="api-instructions" class="tours_ics_feed-info_trigger" title="<?php _e( 'Click to toggle instructions', 'woocommerce-booking' ); ?>"> <?php _e( 'Show me how', 'woocommerce-booking' ); ?> </a></span>
+		            
+		                            <div class="ics-feed-description tours_ics_feed-info_target api-instructions" style="display: none;">
+		                                <ul style="list-style-type:decimal;">
+		                                    <li><?php printf( __( 'Open your Google Calendar by clicking this link: %s', 'woocommerce-booking' ), '<a href="https://www.google.com/calendar/render" target="_blank">https://www.google.com/calendar/render</a>' ) ?></li>
+		                                    <li><?php _e( 'Select the calendar to be imported and click "Calendar settings".', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Click on "ICAL" button in Calendar Address option.', 'woocommerce-booking' ) ?></li>		
+		                                    <li><?php _e( 'Copy the basic.ics file URL.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Paste this link in the text box under Google Calendar Sync tab -> Import Events section.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Save the URL.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'Click on "Import Events" button to import the events from the calendar.', 'woocommerce-booking' ) ?></li>
+		                                    <li><?php _e( 'You can import multiple calendars by using ics feeds. Add them using the Add New Ics Feed url button.', 'woocommerce-booking' ) ?></li>
+		                                </ul>
+		                            </div>
+		                            
+		                            <script type="text/javascript">
+		                            function tours_ics_feed_toggle_target (e) {
+		                            	if ( e && e.preventDefault ) { 
+		                                    e.preventDefault();
+		                                }
+		                            	if ( e && e.stopPropagation ) {
+		                                    e.stopPropagation();
+		                                }
+		                            	var target = jQuery( ".tours_ics_feed-info_target.api-instructions" );
+		                            	if ( !target.length ) {
+		                                    return false;
+		                                }
+		                                
+		                            	if ( target.is( ":visible" ) ) {
+		                                    target.hide( "fast" );
+		                                } else {
+		                                    target.show( "fast" );
+		                                }
+		                            
+		                            	return false;
+		                            }
+		                            jQuery( function () { 
+		                            	jQuery(document).on( "click", ".tours_ics_feed-info_trigger", tours_ics_feed_toggle_target );
+		                            });
+		                            </script>
+		            			</td>
+		            			</tr>
+		            			
+		            			<tr>
+		                            <th><label for="tours_ics_feed_url"><?php _e('iCalendar/.ics Feed URL', 'woocommerce-booking' ); ?></label></th>
+		            			<td>
+		            			
+		                            <table id="tours_ics_url_list">
+		                            <?php 
+		                                $ics_feed_urls = get_the_author_meta( 'tours_ics_feed_urls', $user->ID );
+		                                if( $ics_feed_urls == '' || $ics_feed_urls == '{}' || $ics_feed_urls == '[]' || $ics_feed_urls == 'null' ) {
+		                                    $ics_feed_urls = array();
+		                                }
+		                
+		                                if( count( $ics_feed_urls ) > 0 ) {
+		                                    foreach ( $ics_feed_urls as $key => $value ) {
+		                                        echo "<tr id='$key'>
+		                                            <td class='ics_feed_url'>
+		                                                <input type='text' id='tours_ics_fee_url_$key' size='60' value='" . $value. "'>
+		                                            </td>
+		                                            <td class='ics_feed_url'>
+		                                                <input type='button' value='Save' id='save_ics_url' class='save_button' name='$key' disabled='disabled'>
+		                                            </td>
+		                                            <td class='ics_feed_url'>
+		                                                <input type='button' class='save_button' id='$key' name='import_ics' value='Import Events'>
+		                                            </td>
+		                                            <td class='ics_feed_url'>
+		                                                <input type='button' class='save_button' id='$key' value='Delete' name='delete_ics_feed'>
+		                                            </td>
+		                                            <td class='ics_feed_url'>
+		                                                <div id='import_event_message' style='display:none;'>
+		                                                    <img src='" . plugins_url() . "/woocommerce-booking/images/ajax-loader.gif'>
+		                                                </div>
+		                                                <div id='success_message' ></div>
+		                                            </td>
+		                                        </tr>";
+		                                    }
+		                                } else {
+		                                    echo "<tr id='0' >
+		                                        <td class='ics_feed_url'>
+		                                            <input type='text' id='tours_ics_fee_url_0' size='60' >
+		                                        </td>
+		                                        <td class='ics_feed_url'>
+		                                            <input type='button' value='Save' id='save_ics_url' class='save_button' name='0' >
+		                                        </td>
+		                                        <td class='ics_feed_url'>
+		                                            <input type='button' class='save_button' id='0' name='import_ics' value='Import Events' disabled='disabled'>
+		                                        </td>
+		                                        <td class='ics_feed_url'>
+		                                            <input type='button' class='save_button' id='0' name='delete_ics_feed' value='Delete' disabled='disabled'>
+		                                        </td>
+		                                        <td class='ics_feed_url'>
+		                                            <div id='import_event_message' style='display:none;'>
+		                                                <img src='" . plugins_url() . "/woocommerce-booking/images/ajax-loader.gif'>
+		                                            </div>
+		                                            <div id='success_message' ></div>
+		                                        </td>
+		                                    </tr>";
+		                                }
+		                                echo'</table>';
+		                
+		                                echo "<input type='button' class='save_button' id='add_new_ics_feed' name='add_new_ics_feed' value='Add New Ics feed url'>";
+		                                echo "<script type='text/javascript'>
+		                                    jQuery( document ).ready( function() {
+		                                        
+		                                        jQuery( '#add_new_ics_feed' ).on( 'click', function() {
+		                                            var rowCount = jQuery( '#tours_ics_url_list tr' ).length;
+		                                            jQuery( '#tours_ics_url_list' ).append( '<tr id=\'' + rowCount + '\'><td class=\'ics_feed_url\'><input type=\'text\' id=\'tours_ics_fee_url_' + rowCount + '\' size=\'60\' ></td><td class=\'ics_feed_url\'><input type=\'button\' value=\'Save\' id=\'save_ics_url\' class=\'save_button\' name=\'' + rowCount + '\'></td><td class=\'ics_feed_url\'><input type=\'button\' class=\'save_button\' id=\'' + rowCount + '\' name=\'import_ics\' value=\'Import Events\' disabled=\'disabled\'></td><td class=\'ics_feed_url\'><input type=\'button\' class=\'save_button\' id=\'' + rowCount + '\' value=\'Delete\' disabled=\'disabled\'  name=\'delete_ics_feed\' ></td><td class=\'ics_feed_url\'><div id=\'import_event_message\' style=\'display:none;\'><img src=\'" . plugins_url() . "/woocommerce-booking/images/ajax-loader.gif\'></div><div id=\'success_message\' ></div></td></tr>' );
+		                                        });
+		                                    
+		                                        jQuery( document ).on( 'click', '#save_ics_url', function() {
+		                                            var key = jQuery( this ).attr( 'name' );
+		                                            var data = {
+		                                                user_id: " . $user->ID . ",
+		                                                ics_url: jQuery( '#tours_ics_fee_url_' + key ).val(),
+		                                                action: 'tours_save_ics_url_feed'
+		                                            };
+		                                            jQuery.post( '" . get_admin_url() . "/admin-ajax.php', data, function( response ) {
+		                                                if( response == 'yes' ) {
+		                                                    jQuery( 'input[name=\'' + key + '\']' ).attr( 'disabled','disabled' );
+		                                                    jQuery( 'input[id=\'' + key + '\']' ).removeAttr( 'disabled' );
+		                                                } 
+		                                            });
+		                                        });
+		                                        
+		                                        jQuery( document ).on( 'click', 'input[type=\'button\'][name=\'delete_ics_feed\']', function() {
+		                                            var key = jQuery( this ).attr( 'id' );
+		                                            var data = {
+		                                                user_id: " . $user->ID . ",
+		                                                ics_feed_key: key,
+		                                                action: 'tours_delete_ics_url_feed'
+		                                            };
+		                                            jQuery.post( '" . get_admin_url() . "/admin-ajax.php', data, function( response ) {
+		                                                if( response == 'yes' ) {
+		                                                    jQuery( 'table#tours_ics_url_list tr#' + key ).remove();
+		                                                } 
+		                                            });
+		                                        });
+		                                        
+		                                        jQuery( document ).on( 'click', 'input[type=\'button\'][name=\'import_ics\']', function() {
+		                                            jQuery( '#import_event_message' ).show();
+		                                            var key = jQuery( this ).attr( 'id' );
+		                                            var data = {
+		                                                user_id: " . $user->ID . ",
+		                                                ics_feed_key: key,
+		                                                action: 'tours_import_events'
+		                                            };
+		                                            jQuery.post( '" . get_admin_url() . "/admin-ajax.php', data, function( response ) {
+		                                                jQuery( '#import_event_message' ).hide();
+		                                                jQuery( '#success_message' ).html( response );  
+		                                                jQuery( '#success_message' ).fadeIn();  
+		                                                setTimeout( function() {
+		                                                    jQuery( '#success_message' ).fadeOut();
+		                                                },3000 );
+		                                            });
+		                                        });
+		                                    });
+		                                </script>";
+		                                ?>
+		            			</td>
+		            			</tr>
+		        			</table> 
+		                <?php 
+		    		    }
+		    		}
+		    		
+		    		function tours_save_gcal_fields( $user_id ) {
+		    		
+		    		    if ( !current_user_can( 'edit_user', $user_id ) ) {
+		    		        return false;
+		    		    }
+		    		    	
+		    		    $userid =  new WP_User( $user_id );
+		    		    	
+		    		
+		    		    if( 'tour_operator' == $userid->roles[0] ){
+		    		
+		    		        if ( isset( $_POST[ 'tours_calendar_sync_integration_mode' ] ) ) {
+		    		            update_user_meta( $user_id, 'tours_calendar_sync_integration_mode', $_POST[ 'tours_calendar_sync_integration_mode' ] );
+		    		        }
+		    		
+		    		        $calendar_details = array();
+		    		        $calendar_details[ 'tours_calendar_key_file_name' ] = '';
+		    		        $calendar_details[ 'tours_calendar_service_acc_email_address' ] = '';
+		    		        $calendar_details[ 'tours_calendar_id' ] = '';
+		    		
+		    		        if ( isset( $_POST[ 'tours_calendar_details_1' ][ 'tours_calendar_key_file_name' ] ) ) {
+		    		            $calendar_details[ 'tours_calendar_key_file_name' ] = $_POST[ 'tours_calendar_details_1' ][ 'tours_calendar_key_file_name' ];
+		    		        }
+		    		
+		    		        if ( isset( $_POST[ 'tours_calendar_details_1' ][ 'tours_calendar_service_acc_email_address' ] ) ) {
+		    		            $calendar_details[ 'tours_calendar_service_acc_email_address' ] = $_POST[ 'tours_calendar_details_1' ][ 'tours_calendar_service_acc_email_address' ];
+		    		        }
+		    		
+		    		        if ( isset( $_POST[ 'tours_calendar_details_1' ][ 'tours_calendar_id' ] ) ) {
+		    		            $calendar_details[ 'tours_calendar_id' ] = $_POST[ 'tours_calendar_details_1' ][ 'tours_calendar_id' ];
+		    		        }
+		    		
+		    		        update_user_meta( $user_id, 'tours_calendar_details_1', $calendar_details );
+		    		
+		    		        if ( isset( $_POST[ 'tours_add_to_calendar_view_booking' ] ) ) {
+		    		            update_user_meta( $user_id, 'tours_add_to_calendar_view_booking', $_POST[ 'tours_add_to_calendar_view_booking' ] );
+		    		        } else {
+		    		            update_user_meta( $user_id, 'tours_add_to_calendar_view_booking', '' );
+		    		        }
+		    		
+		    		        if ( isset( $_POST[ 'tours_add_to_calendar_email_notification' ] ) ) {
+		    		            update_user_meta( $user_id, 'tours_add_to_calendar_email_notification', $_POST[ 'tours_add_to_calendar_email_notification' ] );
+		    		        } else {
+		    		            update_user_meta( $user_id, 'tours_add_to_calendar_email_notification', '' );
+		    		        }
+		    		    }
+		    		
+		    		}
 		}
 	}
 	$tour_operators = new tour_operators();
