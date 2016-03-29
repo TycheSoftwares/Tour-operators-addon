@@ -1,11 +1,30 @@
 <?php 
+// Schedule an action if it's not already scheduled
+if ( ! wp_next_scheduled( 'tours_import_events' ) ) {
+    wp_schedule_event( time(), '24_hrs', 'tours_import_events' );
+}
+
+// Hook into that action that'll fire once every day
+add_action( 'tours_import_events', 'tours_import_events_cron' );
+function tours_import_events_cron() {
+    $tours_calendar_sync = new tours_calendar_sync();
+
+    // get the list of tour operators
+    $args = array( 'role' => 'tour_operator', 'fields' => array( 'ID' ) );
+    $users = get_users( $args );
+
+    // for each tour operator
+    foreach ( $users as $user_key => $user_value ) {
+        $_POST[ 'user_id' ] = $user_value->ID;
+        $tours_calendar_sync->tours_setup_import();
+    }
+
+}
 
 class tours_calendar_sync {
     
     public function __construct() {
-//        $this->gcal_api = false;
-//        add_action( 'init', array( $this, 'tours_setup_gcal_sync' ), 10 );
-//        add_action( 'admin_init', array( $this, 'tours_setup_gcal_sync' ), 10 );
+                
         $this->plugin_dir = plugin_dir_path( __FILE__ );
         $this->plugin_url = plugins_url( basename( dirname( __FILE__ ) ) );
         
@@ -17,11 +36,17 @@ class tours_calendar_sync {
         
         add_action( 'wp_ajax_tours_delete_ics_url_feed', array( &$this, 'tours_delete_ics_url_feed' ) );
         
-//        add_action( 'wp_ajax_tours_import_events', array( &$this, 'tours_setup_import' ) );
+        add_action( 'wp_ajax_tours_import_events', array( &$this, 'tours_setup_import' ) );
         
 //        add_action( 'wp_ajax_bkap_admin_booking_calendar_events', array( &$this, 'bkap_admin_booking_calendar_events' ) );
+
+        $path_array = explode( '/', dirname( __FILE__ ) );
+        $plugin_name = array_pop( $path_array );
         
-//        require_once $this->plugin_dir . 'includes/iCal/SG_iCal.php';
+        $path_array = implode( '/', $path_array );
+        
+        require_once $path_array . '/woocommerce-booking/includes/iCal/SG_iCal.php';
+       
     }
     
     
@@ -211,6 +236,107 @@ class tours_calendar_sync {
     
         echo $ics_table_content;
         die();
+    }
+    
+    function tours_setup_import() {
+    
+        global $wpdb;
+    
+        $user_id = $_POST[ 'user_id' ];
+    
+        if( isset( $_POST[ 'ics_feed_key' ] ) ) {
+            $ics_url_key = $_POST[ 'ics_feed_key' ];
+        } else {
+            $ics_url_key = '';
+        }
+         
+        $ics_feed_urls = get_the_author_meta( 'tours_ics_feed_urls', $user_id );
+        if( $ics_feed_urls == '' || $ics_feed_urls == '{}' || $ics_feed_urls == '[]' || $ics_feed_urls == 'null' ) {
+            $ics_feed_urls = array();
+        }
+        mail( 'pinalj1612@gmail.com','ics feed urls',print_r($ics_feed_urls,true));
+        if( count( $ics_feed_urls ) > 0 && isset( $ics_feed_urls[ $ics_url_key ] ) ) {
+            $ics_feed = $ics_feed_urls[ $ics_url_key ];
+        } else {
+            $ics_feed = '';
+        }
+    
+        if ( $ics_feed == '' && count( $_POST ) <= 1 ) { // it means it was called using cron, so we need to auto import for all the calendars saved
+            if ( isset( $ics_feed_urls ) && count( $ics_feed_urls ) > 0 ) {
+    
+                foreach ( $ics_feed_urls as $ics_feed ) {
+                    $ical = new SG_iCalReader( $ics_feed );
+                    $ical_array = $ical->getEvents();
+                    $this->tours_import_events( $ical_array );
+                }
+            }
+        } else {
+            $ical = new SG_iCalReader( $ics_feed );
+            $ical_array = $ical->getEvents();
+    
+            $this->tours_import_events( $ical_array );
+    
+        }
+    
+        die();
+    
+    }
+    
+    function tours_import_events( $ical_array ) {
+    
+        global $wpdb;
+    
+        $user_id = $_POST[ 'user_id' ];
+    
+        $event_uids = get_the_author_meta( 'tours_event_uids_ids', $user_id );
+        if( $event_uids == '' || $event_uids == '{}' || $event_uids == '[]' || $event_uids == 'null' ) {
+            $event_uids = array();
+        }
+    
+        if( isset( $ical_array ) ) {
+    
+            // get the last stored event count
+            $option_name = 'tours_imported_events_' . $user_id . '_%';
+            $options_query = "SELECT option_name FROM `" . $wpdb->prefix. "options`
+                                        WHERE option_name like %s";
+    
+            $results = $wpdb->get_results( $wpdb->prepare( $options_query, $option_name ) );
+            mail( 'pinalj1612@gmail.com','results',print_r($results,true));
+            if (isset( $results ) && count( $results ) > 0 ) {
+                $last_count = 0;
+                foreach ( $results as $results_key => $option_name ) {
+                    $explode_array = explode( '_', $option_name->option_name );
+                    $current_id = $explode_array[4];
+    
+                    if ( $last_count < $current_id ) {
+                        $last_count = $current_id;
+                    }
+                }
+    
+                $i = $last_count + 1;
+    
+            } else {
+                $i = 0;
+            }
+    
+            foreach( $ical_array as $key_event => $value_event ) {
+    
+                //Do stuff with the event $event
+                if( !in_array( $value_event->uid, $event_uids ) ) {
+                    mail( 'pinalj1612@gmail.com',$i, print_r($event_uids,true));
+                    $option_name = 'tours_imported_events_' . $user_id . '_' . $i;
+                    add_option( $option_name, json_encode( $value_event ) );
+    
+    
+                    array_push( $event_uids, $value_event->uid );
+                    update_user_meta( $user_id, 'tours_event_uids_ids', $event_uids );
+    
+    
+                }
+                $i++;
+            }
+            echo "All the Events are Imported.";
+        }
     }
     
 }

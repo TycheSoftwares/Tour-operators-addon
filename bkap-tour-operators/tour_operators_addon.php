@@ -51,6 +51,46 @@ function is_bkap_tours_active() {
 	}
 }
 
+register_uninstall_hook( __FILE__, 'tours_delete' );
+
+function tours_delete() {
+
+    global $wpdb;
+
+    // delete all the option records which are present for imported GCal events and are not yet mapped
+    $delete_imported_events = "DELETE FROM `" . $wpdb->prefix. "options`
+	                       WHERE option_name like 'tours_imported_events_%'";
+    $wpdb->query( $delete_imported_events );
+
+    // delete the item IDs which were imported/exported to GCal
+    $delete_item_ids = "DELETE FROM `" . $wpdb->prefix . "usermeta`
+                        WHERE meta_key = 'tours_event_item_ids'";
+    $wpdb->query( $delete_item_ids );
+
+    // delete the GCal event IDs
+    $delete_event_ids = "DELETE FROM `" . $wpdb->prefix . "usermeta`
+                        WHERE meta_key = 'tours_event_uids_ids'";
+    $wpdb->query( $delete_event_ids );
+
+    //delete the user settings for Gcal
+    $delete_sync_mode = "DELETE FROM `" . $wpdb->prefix . "usermeta`
+                        WHERE meta_key = 'tours_calendar_sync_integration_mode'";
+    $wpdb->query( $delete_sync_mode );
+
+    $delete_calendar = "DELETE FROM `" . $wpdb->prefix . "usermeta`
+                        WHERE meta_key = 'tours_calendar_details_1'";
+    $wpdb->query( $delete_calendar );
+
+    $delete_view_booking = "DELETE FROM `" . $wpdb->prefix . "usermeta`
+                            WHERE meta_key = 'tours_add_to_calendar_view_booking'";
+    $wpdb->query( $delete_view_booking );
+
+    $delete_email_notification = "DELETE FROM `" . $wpdb->prefix . "usermeta`
+                                    WHERE meta_key = 'tours_add_to_calendar_email_notification'";
+    $wpdb->query( $delete_email_notification );
+
+}
+
 load_plugin_textdomain('tour_operators', false, dirname( plugin_basename( __FILE__ ) ) . '/');
 {
 /**
@@ -101,7 +141,7 @@ if (!class_exists('tour_operators')) {
             	
             // include files for GCal
             add_action( 'init', array( &$this, 'tours_include_files' ) );
-            add_action( 'admin_init', array( &$this, 'tours_include_files' ) );
+            add_action( 'admin_init', array( &$this, 'tours_include_files_admin' ) );
             	
             //Hook to add checkbox for send tickets to tour operators
             add_action('bkap_after_global_holiday_field', array('tour_operators_print_tickets','checkbox_settings'));
@@ -127,6 +167,11 @@ if (!class_exists('tour_operators')) {
 	   
 	   function tours_include_files() {
 	       include_once( 'tours-calendar-sync.php' );
+	   }
+	   
+	   function tours_include_files_admin() {
+	       include_once( 'tours-calendar-sync.php' );
+	       include_once( 'tours-import-bookings.php' );
 	   }
 	   
 	function edd_sample_activate_license_tour() {
@@ -661,6 +706,14 @@ if (!class_exists('tour_operators')) {
 				'operator_bookings', 
 				array(&$this,'operator_bookings_page')
 			);
+			 add_submenu_page(
+			     'booking_settings', // Third party plugin Slug
+			     'Import Bookings',
+			     'Import Bookings',
+			     'operator_bookings',
+			     'tours_import_bookings',
+			     array( 'tours_import_bookings','tours_import_bookings_page' )
+			 );
 			 // License menu page
 			 $page = add_submenu_page('booking_settings', __( 'Activate Tour Operators License', 'woocommerce-booking' ), __( 'Activate Tour Operators License', 'woocommerce-booking' ), 'manage_woocommerce', 'tours_license_page', array(&$this, 'edd_sample_license_page_tours' ));
 		}
@@ -824,8 +877,14 @@ if (!class_exists('tour_operators')) {
 		
 		    // check current screen
 		    $screen = get_current_screen();
-		    	
+
+		    // include the file on the profile page
 		    if ('profile' == $screen->base && 'yes' == get_option( 'bkap_allow_tour_operator_gcal_api' ) && array_key_exists( 'tour_operator', $user_capab[0] ) ) {
+		        wp_enqueue_style( 'tours-style', plugins_url('/css/profile.class.css', __FILE__ ) , '', $plugin_version_number , false );
+		    }
+		    
+		    // include the file on the Import Bookings page
+		    if ( isset( $_GET[ 'page' ] ) && 'tours_import_bookings' == $_GET[ 'page' ] ) {
 		        wp_enqueue_style( 'tours-style', plugins_url('/css/profile.class.css', __FILE__ ) , '', $plugin_version_number , false );
 		    }
 		}
