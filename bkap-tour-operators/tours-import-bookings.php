@@ -67,7 +67,7 @@ class tours_import_bookings {
                             WHERE option_name like %s";
             
             $results = $wpdb->get_results( $wpdb->prepare( $options_query, $option_name ) );
-            echo '<pre>';print_r($results);echo'</prE>';
+            
             $class_obj = new WAPBK_Import_Bookings_Table();
             $import_bookings = $class_obj->bkap_create_data( $results );
        

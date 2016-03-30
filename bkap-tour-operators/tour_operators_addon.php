@@ -88,6 +88,11 @@ function tours_delete() {
     $delete_email_notification = "DELETE FROM `" . $wpdb->prefix . "usermeta`
                                     WHERE meta_key = 'tours_add_to_calendar_email_notification'";
     $wpdb->query( $delete_email_notification );
+    
+    $delete_ics_feed_urls = "DELETE FROM `" . $wpdb->prefix . "usermeta`
+                                    WHERE meta_key = 'tours_ics_feed_urls'";
+    $wpdb->query( $delete_ics_feed_urls );
+    
 
 }
 

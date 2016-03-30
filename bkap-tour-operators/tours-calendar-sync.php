@@ -254,7 +254,7 @@ class tours_calendar_sync {
         if( $ics_feed_urls == '' || $ics_feed_urls == '{}' || $ics_feed_urls == '[]' || $ics_feed_urls == 'null' ) {
             $ics_feed_urls = array();
         }
-        mail( 'pinalj1612@gmail.com','ics feed urls',print_r($ics_feed_urls,true));
+        
         if( count( $ics_feed_urls ) > 0 && isset( $ics_feed_urls[ $ics_url_key ] ) ) {
             $ics_feed = $ics_feed_urls[ $ics_url_key ];
         } else {
@@ -301,7 +301,7 @@ class tours_calendar_sync {
                                         WHERE option_name like %s";
     
             $results = $wpdb->get_results( $wpdb->prepare( $options_query, $option_name ) );
-            mail( 'pinalj1612@gmail.com','results',print_r($results,true));
+            
             if (isset( $results ) && count( $results ) > 0 ) {
                 $last_count = 0;
                 foreach ( $results as $results_key => $option_name ) {
@@ -323,7 +323,7 @@ class tours_calendar_sync {
     
                 //Do stuff with the event $event
                 if( !in_array( $value_event->uid, $event_uids ) ) {
-                    mail( 'pinalj1612@gmail.com',$i, print_r($event_uids,true));
+                    
                     $option_name = 'tours_imported_events_' . $user_id . '_' . $i;
                     add_option( $option_name, json_encode( $value_event ) );
     
