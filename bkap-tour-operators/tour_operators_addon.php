@@ -1063,6 +1063,10 @@ if (!class_exists('tour_operators')) {
 		                            <th><label for="tours_calendar_instructions"><?php _e('Instructions', 'woocommerce-booking' ); ?></label></th>
 		            			<td>
 		            			<?php 
+		            			$path_array = explode( '/', dirname( __FILE__ ) );
+		            			$plugin_name = array_pop( $path_array );
+		            			
+		            			$path_array = implode( '/', $path_array );
 		            			_e( 'To set up Google Calendar API, please click on "Show me how" link and carefully follow these steps:
 		            			
 		                        <span class="description" ><a href="#tours-instructions" id="show_instructions" data-target="api-instructions" class="tours-info_trigger" title="' . __ ( 'Click to toggle instructions', 'woocommerce-booking') . '">' . __( 'Show me how', 'woocommerce-booking' ) . '</a></span>', 'woocommerce-booking' );
@@ -1080,7 +1084,7 @@ if (!class_exists('tour_operators')) {
 		                                    <li><?php _e( 'Click on New Credentials dropdown and select "Service account key".', 'woocommerce-booking' ) ?></li>
 		                                    <li><?php _e( 'Click "Service account" and select "New service account" and enter the name. Now select key type as "P12" and create the service account.', 'woocommerce-booking' ) ?></li>
 		                                    <li><?php _e( 'A file with extension .p12 will be downloaded.', 'woocommerce-booking' ) ?></li>
-		                                    <li><?php printf( __( 'Using your FTP client program, copy this key file to folder: %s . This file is required as you will grant access to your Google Calendar account even if you are not online. So this file serves as a proof of your consent to access to your Google calendar account. Note: This file cannot be uploaded in any other way. If you do not have FTP access, ask the website admin to do it for you.', 'woocommerce-booking' ), plugin_dir_path( __FILE__ ) .'gcal/key/' ) ?></li>
+		                                    <li><?php printf( __( 'Using your FTP client program, copy this key file to folder: %s . This file is required as you will grant access to your Google Calendar account even if you are not online. So this file serves as a proof of your consent to access to your Google calendar account. Note: This file cannot be uploaded in any other way. If you do not have FTP access, ask the website admin to do it for you.', 'woocommerce-booking' ), $path_array .'/woocommerce-booking/includes/gcal/key/' ) ?></li>
 		                                    <li><?php _e( 'Enter the name of the key file to "Key file name" setting of Booking. Exclude the extention .p12.', 'woocommerce-booking' ) ?></li>
 		                                    <li><?php _e( 'Copy "Email address" setting from Manage service account of Google apis console and paste it to "Service account email address" setting of Booking.', 'woocommerce-booking' ) ?></li>
 		                                    <li><?php printf( __( 'Open your Google Calendar by clicking this link: %s', 'woocommerce-booking' ), '<a href="https://www.google.com/calendar/render" target="_blank">https://www.google.com/calendar/render</a>' ) ?></li>
