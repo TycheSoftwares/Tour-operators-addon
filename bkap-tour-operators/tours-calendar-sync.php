@@ -1,24 +1,26 @@
 <?php 
-// Schedule an action if it's not already scheduled
-if ( ! wp_next_scheduled( 'tours_import_events' ) ) {
-    wp_schedule_event( time(), '24_hrs', 'tours_import_events' );
-}
-
-// Hook into that action that'll fire once every day
-add_action( 'tours_import_events', 'tours_import_events_cron' );
-function tours_import_events_cron() {
-    $tours_calendar_sync = new tours_calendar_sync();
-
-    // get the list of tour operators
-    $args = array( 'role' => 'tour_operator', 'fields' => array( 'ID' ) );
-    $users = get_users( $args );
-
-    // for each tour operator
-    foreach ( $users as $user_key => $user_value ) {
-        $_POST[ 'user_id' ] = $user_value->ID;
-        $tours_calendar_sync->tours_setup_import();
+if ( 'yes' == get_option( 'bkap_allow_tour_operator_gcal_api' ) ) {
+    // Schedule an action if it's not already scheduled
+    if ( ! wp_next_scheduled( 'tours_import_events' ) ) {
+        wp_schedule_event( time(), '24_hrs', 'tours_import_events' );
     }
-
+    
+    // Hook into that action that'll fire once every day
+    add_action( 'tours_import_events', 'tours_import_events_cron' );
+    function tours_import_events_cron() {
+        $tours_calendar_sync = new tours_calendar_sync();
+    
+        // get the list of tour operators
+        $args = array( 'role' => 'tour_operator', 'fields' => array( 'ID' ) );
+        $users = get_users( $args );
+    
+        // for each tour operator
+        foreach ( $users as $user_key => $user_value ) {
+            $_POST[ 'user_id' ] = $user_value->ID;
+            $tours_calendar_sync->tours_setup_import();
+        }
+    
+    }
 }
 
 class tours_calendar_sync {
@@ -30,7 +32,7 @@ class tours_calendar_sync {
         
         add_action( 'woocommerce_checkout_update_order_meta', array( &$this, 'tours_google_calendar_update_order_meta' ), 12 );
         
-        add_action( 'woocommerce_order_item_meta_end', array( &$this, 'tours_add_to_calendar_admin'), 15, 4 );
+        add_action( 'woocommerce_order_item_meta_end', array( &$this, 'tours_add_to_calendar_admin'), 15, 3 );
         
         add_action( 'wp_ajax_tours_save_ics_url_feed', array( &$this, 'tours_save_ics_url_feed' ) );
         
@@ -151,9 +153,9 @@ class tours_calendar_sync {
         
     }
     
-    function tours_add_to_calendar_admin( $item_id, $item, $order, $sent_admin = true ) {
+    function tours_add_to_calendar_admin( $item_id, $item, $order ) {
         
-        if ( ! is_account_page() && ! is_wc_endpoint_url( 'order-received' ) && true === $sent_admin ) {
+        if ( ! is_account_page() && ! is_wc_endpoint_url( 'order-received' ) ) {
             
             // check if it's a bookable product
             $post_id = bkap_common::bkap_get_product_id( $item[ 'product_id' ] );
@@ -172,9 +174,17 @@ class tours_calendar_sync {
                         $sync_setting = esc_attr( get_the_author_meta( 'tours_calendar_sync_integration_mode', $booking_settings[ 'booking_tour_operator' ] ) );
                         
                         if( "on" == esc_attr( get_the_author_meta( 'tours_add_to_calendar_email_notification', $booking_settings[ 'booking_tour_operator' ] ) ) && 'manually' == $sync_setting ) {
-                            $bkap_calendar_sync = new bkap_calendar_sync();
-                            $bkap = $bkap_calendar_sync->bkap_create_gcal_obj( $item_id, $item, $order );
-                            $bkap_calendar_sync->bkap_add_buttons_emails( $bkap );
+                            
+                            $email = '';
+                            if ( class_exists( 'tour_operators_print_tickets' ) ) {
+                                $email = tour_operators_print_tickets::$email;
+                                
+                            }
+                            if ( 'YES' == $email ) {
+                                $bkap_calendar_sync = new bkap_calendar_sync();
+                                $bkap = $bkap_calendar_sync->bkap_create_gcal_obj( $item_id, $item, $order );
+                                $bkap_calendar_sync->bkap_add_buttons_emails( $bkap );
+                            }
                         }
                     }
         

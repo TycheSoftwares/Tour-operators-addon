@@ -14,8 +14,6 @@ $ExampleUpdateChecker = new PluginUpdateChecker(
 	__FILE__
 );*/
 
-include('print-tickets.php');
-
 global $TourUpdateChecker;
 $TourUpdateChecker = '1.6';
 
@@ -145,7 +143,7 @@ if (!class_exists('tour_operators')) {
             add_action( 'personal_options_update', array(&$this, 'tours_save_gcal_fields'), 11, 1 );
             	
             // include files for GCal
-            add_action( 'init', array( &$this, 'tours_include_files' ) );
+            add_action( 'wp_loaded', array( &$this, 'tours_include_files' ) );
             add_action( 'admin_init', array( &$this, 'tours_include_files_admin' ) );
             	
             //Hook to add checkbox for send tickets to tour operators
@@ -171,6 +169,7 @@ if (!class_exists('tour_operators')) {
 	   }
 	   
 	   function tours_include_files() {
+	       include_once( 'print-tickets.php' );
 	       include_once( 'tours-calendar-sync.php' );
 	   }
 	   

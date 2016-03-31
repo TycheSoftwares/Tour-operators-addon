@@ -1,6 +1,8 @@
 <?php
 
 class tour_operators_print_tickets {
+    
+    public static $email = '';
 	
 	public static function checkbox_settings() {
 		$saved_settings = json_decode(get_option('woocommerce_booking_global_settings'));
@@ -38,8 +40,8 @@ class tour_operators_print_tickets {
 		} else {
 			$send_emails_to_tour_operators = 'on';
 		}
-		if($send_emails_to_tour_operators == 'on')
-		{
+		if( $send_emails_to_tour_operators == 'on' ) {
+		    tour_operators_print_tickets::$email = 'YES';
 			$order_obj = new WC_order($order_id);
 			$order_items = $order_obj->get_items();
 			foreach($order_items as $item_key => $item_value) {
@@ -221,7 +223,8 @@ class tour_operators_print_tickets {
 				$template .= ob_get_clean();
 				$headers_email[] = "From: ".$from_email_name." <".$from_email.">"."\r\n";
 				$headers_email[] = "Content-type: text/html";
-				wp_mail($tour_operator_email,$subject,$template,$headers_email);
+				wp_mail( $tour_operator_email, $subject, $template, $headers_email );
+				tour_operators_print_tickets::$email = 'NO';
 			}
 		}
 	}
