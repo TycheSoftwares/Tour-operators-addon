@@ -333,14 +333,15 @@ class tours_calendar_sync {
     
                 //Do stuff with the event $event
                 if( !in_array( $value_event->uid, $event_uids ) ) {
+                    // Import future dated events
+                    if ( $value_event->start >= current_time( 'timestamp' ) ) {
                     
-                    $option_name = 'tours_imported_events_' . $user_id . '_' . $i;
-                    add_option( $option_name, json_encode( $value_event ) );
-    
-    
-                    array_push( $event_uids, $value_event->uid );
-                    update_user_meta( $user_id, 'tours_event_uids_ids', $event_uids );
-    
+                        $option_name = 'tours_imported_events_' . $user_id . '_' . $i;
+                        add_option( $option_name, json_encode( $value_event ) );
+        
+                        array_push( $event_uids, $value_event->uid );
+                        update_user_meta( $user_id, 'tours_event_uids_ids', $event_uids );
+                    }
     
                 }
                 $i++;
