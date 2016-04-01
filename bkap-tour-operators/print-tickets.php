@@ -8,7 +8,9 @@ class tour_operators_print_tickets {
 		$saved_settings = json_decode(get_option('woocommerce_booking_global_settings'));
 		?>
 		<tr>
-			<th><label for="booking_send_tickets_to_tour_operators"><b><?php _e('Send Notification emails to Tour operators:', 'woocommerce-booking');?></b></label></th>
+			<td>
+                <label for="booking_send_tickets_to_tour_operators"><b><?php _e('Send Notification emails to Tour operators:', 'woocommerce-booking'); ?></b></label>
+            </td>
 			<td>
 	    	<?php
 		   	$send_tickets = ""; 
@@ -18,7 +20,7 @@ class tour_operators_print_tickets {
 				$send_tickets = "checked";
 			}
 		    ?>
-		   	<input type="checkbox" id="booking_send_tickets_to_tour_operators" name="booking_send_tickets_to_tour_operators" <?php echo $send_tickets; ?>/>
+		   	<input style="margin-left:24px;" type="checkbox" id="booking_send_tickets_to_tour_operators" name="booking_send_tickets_to_tour_operators" <?php echo $send_tickets; ?>/>
 		 	<img class="help_tip" width="16" height="16" data-tip="<?php _e('Please select this checkbox if you want to send notification emails to tour operators when the order is completed.', 'woocommerce-booking');?>" src="<?php echo plugins_url() ;?>/woocommerce/assets/images/help.png" style="vertical-align:top;"/><br>
 		    </td>
 		</tr>
