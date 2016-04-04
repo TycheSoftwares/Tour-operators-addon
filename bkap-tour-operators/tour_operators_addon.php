@@ -362,63 +362,68 @@ if (!class_exists('tour_operators')) {
 			function filter_posts( $posts ) {
 
 			// create an array to hold the posts we want to show
-			if(is_admin()):
+			if( is_admin() ): // checks if the url being accessed is in the admin section
 				$new_posts = array();
-				$user = new WP_User(get_current_user_id());
-				if($user->roles[0]=='tour_operator') {
+				$user = new WP_User( get_current_user_id() );
+				if( $user->roles[ 0 ] == 'tour_operator' ) {
 				// loop through all the post objects
 					foreach( $posts as $post ) {
-						if($post->post_type == 'page') {
+						if( $post->post_type == 'page' ) {
 							return $posts;
-						}
-						elseif($post->post_type != 'shop_order' ) {
+						} elseif( $post->post_type != 'shop_order' ) {
 							$include = false;
-							$booking_settings = get_post_meta($post->ID, 'woocommerce_booking_settings', true);
-							if($post->post_author == get_current_user_id() || (isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]==get_current_user_id())) {
+							$booking_settings = get_post_meta( $post->ID, 'woocommerce_booking_settings', true );
+							if( $post->post_author == get_current_user_id() || ( isset( $booking_settings[ "booking_tour_operator" ] ) && $booking_settings[ "booking_tour_operator" ] == get_current_user_id() ) ) {
 								$include = '1';
-							}
-							else {
+							} else if ( isset( $post->post_parent ) && $post->post_parent != 0 ) { // check for variations of variable products
+							    $booking_settings = get_post_meta( $post->post_parent, 'woocommerce_booking_settings', true );
+							    if( ( isset( $booking_settings[ "booking_tour_operator" ] ) && $booking_settings[ "booking_tour_operator" ] == get_current_user_id() ) ) {
+							        $include = '1';
+							    }
+							} else {
 								$inlcude = '0';
 							}
-							if ( $include == '1') {
+							
+							if ( $include == '1' ) {
 								$new_posts[] = $post;
 							}
-						}
-						elseif($post->post_type == 'shop_order') {
+						} elseif( $post->post_type == 'shop_order' ) {
 							global $wpdb;
+							
 							$check_query = "SELECT a.post_id FROM `".$wpdb->prefix."booking_history` as a join `".$wpdb->prefix."booking_order_history` as b on a.id=b.booking_id
 										and b.order_id='".$post->ID."'";
 										
-							$results_check = $wpdb->get_results ($check_query);
+							$results_check = $wpdb->get_results ( $check_query );
+							
 							$flag = false;
-							if(!empty($results_check )) {
-								foreach($results_check as $res) {
+							
+							if( !empty( $results_check ) ) {
+
+							    foreach( $results_check as $res ) {
 									$product_id = $res->post_id;
-									$booking_settings = get_post_meta($product_id, 'woocommerce_booking_settings', true);
+									$booking_settings = get_post_meta( $product_id, 'woocommerce_booking_settings', true );
 		
-									if(!isset($booking_settings["booking_tour_operator"]) ||(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]!=get_current_user_id())) {
+									if( !isset( $booking_settings[ "booking_tour_operator" ] ) || ( isset( $booking_settings[ "booking_tour_operator" ] ) && $booking_settings[ "booking_tour_operator" ] != get_current_user_id() ) ) {
 										$flag = false;
-									}
-									elseif(isset($booking_settings["booking_tour_operator"]) && $booking_settings["booking_tour_operator"]==get_current_user_id()) {
+									} elseif( isset( $booking_settings[ "booking_tour_operator" ] ) && $booking_settings[ "booking_tour_operator" ] == get_current_user_id() ) {
 										$flag = true;
 										break;
-									}
-									else {
+									} else {
 										$flag = false;
 									}
 								}
 							}
 								
-							if($flag) {
+							if( $flag ) {
 							   $new_posts[] = $post;
 							} 
 						}	
 					}
+				} else {
+					return $posts;
 				}
-				else {
-						return $posts;
-				}
-			// send the new post array back to be used by WordPress
+			
+                // send the new post array back to be used by WordPress
 				return $new_posts;
 			else:
 				return $posts;
