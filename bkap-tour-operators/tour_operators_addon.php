@@ -128,10 +128,6 @@ if (!class_exists('tour_operators')) {
 			add_action( 'personal_options_update', array( &$this, 'save_extra_user_profile_fields' ), 10, 1 );
 			add_action( 'edit_user_profile_update', array(&$this, 'save_extra_user_profile_fields') );
 			add_filter('the_posts', array(&$this, 'filter_posts') , 1 );
-			// tour operator data on the view bookings page
-			add_filter('bkap_bookings_table_data',array(&$this,'tour_column_data'),20,1);
-			// CSV file data
-			add_filter('bkap_bookings_export_data',array(&$this,'tours_generate_data_export'),20,1);
 			
             add_filter('user_has_cap', array($this, 'user_has_cap'), 10, 3);
             
@@ -176,6 +172,7 @@ if (!class_exists('tour_operators')) {
 	   function tours_include_files_admin() {
 	       include_once( 'tours-calendar-sync.php' );
 	       include_once( 'tours-import-bookings.php' );
+	       include_once( 'tours-view-bookings.php' );
 	   }
 	   
 	function edd_sample_activate_license_tour() {
@@ -713,7 +710,7 @@ if (!class_exists('tour_operators')) {
 				'View Bookings', 
 				'operator_bookings', 
 				'operator_bookings', 
-				array(&$this,'operator_bookings_page')
+				array( 'tours_view_bookings', 'operator_bookings_page' )
 			);
 			 add_submenu_page(
 			     'booking_settings', // Third party plugin Slug
@@ -809,42 +806,6 @@ if (!class_exists('tour_operators')) {
 			</table>
 			<?php 
 			} 
-		}
-		function operator_bookings_page(){
-			// Call the View Bookings page function here, so all the entries are passed on...
-			view_bookings::bkap_woocommerce_history_page();
-		}
-		
-		function tour_column_data($booking_data) {
-			$user = new WP_User( get_current_user_id() );
-			foreach( $booking_data as $key => $value ) {
-				if( $user->roles[0] == 'tour_operator' ) {
-					$booking_settings = get_post_meta($value->product_id, 'woocommerce_booking_settings', true);
-					if(isset($booking_settings['booking_tour_operator']) &&  $booking_settings['booking_tour_operator'] == get_current_user_id()){
-					}
-					else {
-						// Unset the entries that do not belong to this tour operator (user)
-						unset($booking_data[$key]);
-					}
-				}
-			}
-			return $booking_data;
-		}
-		
-		function tours_generate_data_export($report) {
-			$user = new WP_User( get_current_user_id() );
-			foreach( $report as $key => $value ) {
-				if( $user->roles[0] == 'tour_operator' ) {
-					$booking_settings = get_post_meta($value->product_id, 'woocommerce_booking_settings', true);
-					if(isset($booking_settings['booking_tour_operator']) &&  $booking_settings['booking_tour_operator'] == get_current_user_id()){
-					}
-					else {
-						// Unset the entries that do not belong to this tour operator (user)
-						unset($report[$key]);
-					}
-				}
-			}
-			return $report;
 		}
 		
 		function tours_load_view_booking_page() {
