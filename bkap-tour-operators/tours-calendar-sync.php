@@ -162,7 +162,7 @@ class tours_calendar_sync {
             
             $bookable = bkap_common::bkap_get_bookable_status( $post_id );
             
-            if ( $bookable ) {
+            if ( $bookable && ( isset( $item[ 'wapbk_booking_date' ] ) && $item[ 'wapbk_booking_date' ] != '' ) ) {
             
                 // check if tour operators are allowed to setup GCal
                 if ( 'yes' == get_option( 'bkap_allow_tour_operator_gcal_api' ) ) {
