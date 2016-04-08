@@ -57,9 +57,6 @@ class tours_calendar_sync {
         
         $gcal = new BKAP_Gcal();
         
-        $user = get_user_by( 'email', get_option( 'admin_email' ) );
-        $admin_id = $user->ID;
-        
         $order_item_ids   =   array();
         $sub_query        =   "";
         
@@ -75,7 +72,13 @@ class tours_calendar_sync {
                 }
             }
         
-            if ( isset( $values[ 'bkap_booking' ] ) && isset( $user_id ) && $user_id != $admin_id ) {
+            $user_role = '';
+            if ( isset( $user_id ) ) {
+                $user = new WP_User( $user_id );
+                $user_role = $user->roles[ 0 ];
+            }
+             
+            if ( isset( $values[ 'bkap_booking' ] ) && isset( $user_id ) && 'tour_operator' == $user_role ) {
         
                 if( $gcal->get_api_mode( $user_id ) == "directly" ) {
                     $_data    =   $values[ 'data' ];
