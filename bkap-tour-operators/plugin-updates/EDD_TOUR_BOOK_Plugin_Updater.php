@@ -7,12 +7,12 @@
  * Allows plugins to use their own update API.
  *
  * @author Ashok Rane
- * @version 1.6
+ * @version 1.7
  */
 class EDD_TOUR_BOOK_Plugin_Updater {
 	private $api_url  = 'http://www.tychesoftwares.com/';
 	private $api_data = array();
-	private $name     = 'Woocommerce Tour Operators Addon';
+	private $name     = 'Tour Operators Addon for the WooCommerce Booking and Appointment Plugin';
 	private $slug     = 'tour_operators_addon';
 
 	/**

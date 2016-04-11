@@ -3,7 +3,7 @@
 Plugin Name: Tour Operators Addon
 Plugin URI: https://www.tychesoftwares.com/store/premium-plugins/tour-operators-addon-for-woocommerce-booking-appointment-plugin/
 Description: This is an addon for the WooCommerce Booking & Appointment Plugin which lets you to add and Manage Tour Operators.
-Version: 1.6
+Version: 1.7
 Author: Tyche Softwares
 Author URI: http://www.tychesoftwares.com/
 */
@@ -15,7 +15,7 @@ $ExampleUpdateChecker = new PluginUpdateChecker(
 );*/
 
 global $TourUpdateChecker;
-$TourUpdateChecker = '1.6';
+$TourUpdateChecker = '1.7';
 
 // this is the URL our updater / license checker pings. This should be the URL of the site with EDD installed
 define( 'EDD_SL_STORE_URL_TOUR_BOOK', 'http://www.tychesoftwares.com/' ); // IMPORTANT: change the name of this constant to something unique to prevent conflicts with other plugins using this system
@@ -33,7 +33,7 @@ $license_key = trim( get_option( 'edd_sample_license_key_tour_book' ) );
 
 // setup the updater
 $edd_updater = new EDD_TOUR_BOOK_Plugin_Updater( EDD_SL_STORE_URL_TOUR_BOOK, __FILE__, array(
-		'version' 	=> '1.6', 		// current version number
+		'version' 	=> '1.7', 		// current version number
 		'license' 	=> $license_key, 	// license key (used get_option above to retrieve from DB)
 		'item_name' => EDD_SL_ITEM_NAME_TOUR_BOOK, 	// name of this plugin
 		'author' 	=> 'Ashok Rane'  // author of this plugin
