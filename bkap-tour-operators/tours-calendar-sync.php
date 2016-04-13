@@ -278,13 +278,13 @@ class tours_calendar_sync {
             if ( isset( $ics_feed_urls ) && count( $ics_feed_urls ) > 0 ) {
     
                 foreach ( $ics_feed_urls as $ics_feed ) {
-                    $ical = new SG_iCalReader( $ics_feed );
+                    $ical = new BKAP_iCalReader( $ics_feed );
                     $ical_array = $ical->getEvents();
                     $this->tours_import_events( $ical_array );
                 }
             }
         } else {
-            $ical = new SG_iCalReader( $ics_feed );
+            $ical = new BKAP_iCalReader( $ics_feed );
             $ical_array = $ical->getEvents();
     
             $this->tours_import_events( $ical_array );
