@@ -103,52 +103,61 @@ class tours_calendar_sync {
         
                     if ( ( isset( $booking_status ) && 'pending-confirmation' != $booking_status ) || ( ! isset( $booking_status )) ) {
         
-                        $event_details = array();
-        
-                        $event_details[ 'hidden_booking_date' ] = $_booking[ 'hidden_date' ];
-        
-                        if ( isset( $_booking[ 'hidden_date_checkout' ] ) && $_booking[ 'hidden_date_checkout' ] != '' ) {
-                            $event_details[ 'hidden_checkout_date' ] = $_booking[ 'hidden_date_checkout' ];
+                        // ensure it's a future dated event
+                        if ( isset( $_booking[ 'hidden_date' ] ) && $_booking[ 'hidden_date' ] != '1-1-1970' ) {
+                            $event_details = array();
+            
+                            $event_details[ 'hidden_booking_date' ] = $_booking[ 'hidden_date' ];
+            
+                            if ( isset( $_booking[ 'hidden_date_checkout' ] ) && $_booking[ 'hidden_date_checkout' ] != '' ) {
+                                $event_details[ 'hidden_checkout_date' ] = $_booking[ 'hidden_date_checkout' ];
+                            }
+            
+                            if ( isset( $_booking[ 'time_slot' ] ) && $_booking[ 'time_slot' ] != '' ) {
+                                $event_details[ 'time_slot' ] = $_booking[ 'time_slot' ];
+                            }
+            
+                            $event_details[ 'billing_email' ] = $_POST[ 'billing_email' ];
+                            $event_details[ 'billing_first_name' ] = $_POST[ 'billing_first_name' ];
+                            $event_details[ 'billing_last_name' ] = $_POST[ 'billing_last_name' ];
+                            $event_details[ 'billing_address_1' ] = $_POST[ 'billing_address_1' ];
+                            $event_details[ 'billing_address_2' ] = $_POST[ 'billing_address_2' ];
+                            $event_details[ 'billing_city' ] = $_POST[ 'billing_city' ];
+            
+                            $event_details[ 'billing_phone' ] = $_POST[ 'billing_phone' ];
+                            $event_details[ 'order_comments' ] = $_POST[ 'order_comments' ];
+                            $event_details[ 'order_id' ] = $order_id;
+            
+            
+                            if ( isset( $_POST[ 'shipping_first_name' ] ) && $_POST[ 'shipping_first_name' ] != '' ) {
+                                $event_details[ 'shipping_first_name' ] = $_POST[ 'shipping_first_name' ];
+                            }
+                            if ( isset( $_POST[ 'shipping_last_name' ] ) && $_POST[ 'shipping_last_name' ] != '' ) {
+                                $event_details[ 'shipping_last_name' ] = $_POST[ 'shipping_last_name' ];
+                            }
+                            if( isset( $_POST[ 'shipping_address_1' ] ) && $_POST[ 'shipping_address_1' ] != '' ) {
+                                $event_details[ 'shipping_address_1' ] = $_POST[ 'shipping_address_1' ];
+                            }
+                            if ( isset( $_POST[ 'shipping_address_2' ] ) && $_POST[ 'shipping_address_2' ] != '' ) {
+                                $event_details[ 'shipping_address_2' ] = $_POST[ 'shipping_address_2' ];
+                            }
+                            if ( isset( $_POST[ 'shipping_city' ] ) && $_POST[ 'shipping_city' ] != '' ) {
+                                $event_details[ 'shipping_city' ] = $_POST[ 'shipping_city' ];
+                            }
+            
+                            $event_details[ 'product_name' ] = $post_title;
+                            $event_details[ 'product_qty' ] = $values[ 'quantity' ];
+            
+                            $event_details[ 'product_total' ] = $_booking[ 'price' ] * $values[ 'quantity' ];
+            
+                            $gcal->insert_event( $event_details, $results[0]->order_item_id, $user_id, false );
+                            
+                            // add an order note, mentioning an event has been created for the item
+                            $order = new WC_Order( $order_id );
+                            
+                            $order_note = __( "Booking_details for $post_title have been exported to the Google Calendar", 'woocommerce-booking' );
+                            $order->add_order_note( $order_note );
                         }
-        
-                        if ( isset( $_booking[ 'time_slot' ] ) && $_booking[ 'time_slot' ] != '' ) {
-                            $event_details[ 'time_slot' ] = $_booking[ 'time_slot' ];
-                        }
-        
-                        $event_details[ 'billing_email' ] = $_POST[ 'billing_email' ];
-                        $event_details[ 'billing_first_name' ] = $_POST[ 'billing_first_name' ];
-                        $event_details[ 'billing_last_name' ] = $_POST[ 'billing_last_name' ];
-                        $event_details[ 'billing_address_1' ] = $_POST[ 'billing_address_1' ];
-                        $event_details[ 'billing_address_2' ] = $_POST[ 'billing_address_2' ];
-                        $event_details[ 'billing_city' ] = $_POST[ 'billing_city' ];
-        
-                        $event_details[ 'billing_phone' ] = $_POST[ 'billing_phone' ];
-                        $event_details[ 'order_comments' ] = $_POST[ 'order_comments' ];
-                        $event_details[ 'order_id' ] = $order_id;
-        
-        
-                        if ( isset( $_POST[ 'shipping_first_name' ] ) && $_POST[ 'shipping_first_name' ] != '' ) {
-                            $event_details[ 'shipping_first_name' ] = $_POST[ 'shipping_first_name' ];
-                        }
-                        if ( isset( $_POST[ 'shipping_last_name' ] ) && $_POST[ 'shipping_last_name' ] != '' ) {
-                            $event_details[ 'shipping_last_name' ] = $_POST[ 'shipping_last_name' ];
-                        }
-                        if( isset( $_POST[ 'shipping_address_1' ] ) && $_POST[ 'shipping_address_1' ] != '' ) {
-                            $event_details[ 'shipping_address_1' ] = $_POST[ 'shipping_address_1' ];
-                        }
-                        if ( isset( $_POST[ 'shipping_address_2' ] ) && $_POST[ 'shipping_address_2' ] != '' ) {
-                            $event_details[ 'shipping_address_2' ] = $_POST[ 'shipping_address_2' ];
-                        }
-                        if ( isset( $_POST[ 'shipping_city' ] ) && $_POST[ 'shipping_city' ] != '' ) {
-                            $event_details[ 'shipping_city' ] = $_POST[ 'shipping_city' ];
-                        }
-        
-                        $event_details[ 'product_name' ] = $post_title;
-                        $event_details[ 'product_qty' ] = $values[ 'quantity' ];
-        
-                        $event_details[ 'product_total' ] = $_booking[ 'price' ] * $values[ 'quantity' ];
-        
-                        $gcal->insert_event( $event_details, $results[0]->order_item_id, $user_id, false );
                     }
                 }
             }
@@ -165,7 +174,7 @@ class tours_calendar_sync {
             
             $bookable = bkap_common::bkap_get_bookable_status( $post_id );
             
-            if ( $bookable && ( isset( $item[ 'wapbk_booking_date' ] ) && $item[ 'wapbk_booking_date' ] != '' ) ) {
+            if ( $bookable && ( isset( $item[ 'wapbk_booking_date' ] ) && $item[ 'wapbk_booking_date' ] != '' && $item[ 'wapbk_booking_date' ] != '1970-01-01' ) ) {
             
                 // check if tour operators are allowed to setup GCal
                 if ( 'yes' == get_option( 'bkap_allow_tour_operator_gcal_api' ) ) {
