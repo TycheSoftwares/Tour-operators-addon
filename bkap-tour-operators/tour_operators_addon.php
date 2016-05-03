@@ -91,7 +91,9 @@ function tours_delete() {
                                     WHERE meta_key = 'tours_ics_feed_urls'";
     $wpdb->query( $delete_ics_feed_urls );
     
-
+    // delete the settings from the Addon Settings tab
+    delete_option( 'bkap_send_tickets_to_tour_operators' );
+    
 }
 
 load_plugin_textdomain('tour_operators', false, dirname( plugin_basename( __FILE__ ) ) . '/');
@@ -142,9 +144,6 @@ if (!class_exists('tour_operators')) {
             add_action( 'wp_loaded', array( &$this, 'tours_include_files' ) );
             add_action( 'admin_init', array( &$this, 'tours_include_files_admin' ) );
             	
-            //Hook to add checkbox for send tickets to tour operators
-            add_action('bkap_after_global_holiday_field', array('tour_operators_print_tickets','checkbox_settings'));
-            add_filter('bkap_save_global_settings',array('tour_operators_print_tickets','save_global_settings'), 10, 1);
             add_action('woocommerce_order_status_completed',array('tour_operators_print_tickets','send_tickets'), 10, 1);
             if ( get_option( 'woocommerce_version' ) >= "2.3" ) {
             	add_action( 'woocommerce_email_customer_details', array('tour_operators_print_tickets','tour_operators_details'), 11, 3 );
@@ -153,6 +152,13 @@ if (!class_exists('tour_operators')) {
             	add_action( 'woocommerce_email_after_order_table', array('tour_operators_print_tickets','tour_operators_details'), 11, 3 );
             }
 
+            // Add the new settings tab for the addon
+            add_action( 'bkap_add_addon_settings', array( &$this, 'bkap_tours_addon' ), 9 );
+            // Wordpress settings API
+            add_action('admin_init', array( &$this, 'bkap_tours_plugin_options' ) );
+            // when the update is run, ensure the settings are copied to the new record in wp_options
+            add_action( 'admin_init', array( &$this, 'bkap_tours_update_db_check' ) );
+            
     		add_action('admin_init', array(&$this, 'edd_sample_register_option_tour'));
 			add_action('admin_init', array(&$this, 'edd_sample_deactivate_license_tour'));
 			add_action('admin_init', array(&$this, 'edd_sample_activate_license_tour'));
@@ -175,6 +181,91 @@ if (!class_exists('tour_operators')) {
 	       include_once( 'tours-view-bookings.php' );
 	   }
 	   
+	   function bkap_tours_addon() {
+	   
+	       if ( isset( $_GET[ 'action' ] ) ) {
+	           $action = $_GET[ 'action' ];
+	       } else {
+	           $action = '';
+	       }
+	       if ( 'addon_settings' == $action ) {
+	           ?>
+	          				<div id="content">
+	          					<form method="post" action="options.php">
+	          						<?php settings_errors(); ?>
+	          					    <?php settings_fields( 'bkap_tours_settings' ); ?>
+	          				        <?php do_settings_sections( 'woocommerce_booking_page' ); ?> 
+	          						<?php submit_button(); ?>
+	          			        </form>
+	          			    </div>
+	      				<?php 
+	          		}
+	   	   }
+	   	   
+	   	   function bkap_tours_plugin_options() {
+	   	       
+	   	       // First, we register a section. This is necessary since all future options must belong to a section
+	   	       add_settings_section(
+	   	       'bkap_tours_settings_section',         // ID used to identify this section and with which to register options
+	   	       __( 'Tour Operator Addon Settings', 'tour_operators' ),                  // Title to be displayed on the administration page
+	   	       array( $this, 'bkap_tours_callback' ), // Callback used to render the description of the section
+	   	       'woocommerce_booking_page'     // Page on which to add this section of options
+	   	       );
+	   	       
+	   	       add_settings_field(
+	   	       'bkap_send_tickets_to_tour_operators',
+	   	       __( 'Send Notification emails to Tour operators:', 'tour_operators' ),
+	   	       array( $this, 'bkap_tours_enable_email_callback' ),
+	   	       'woocommerce_booking_page',
+	   	       'bkap_tours_settings_section',
+	   	       array( __( 'Please select this checkbox if you want to send notification emails to tour operators when the order is completed.', 'tour_operators' ) )
+	   	       );
+	   	       
+	   	       register_setting(
+	   	       'bkap_tours_settings',
+	   	       'bkap_send_tickets_to_tour_operators'
+	   	           );
+	   	       
+	   	   }
+	   	   
+	   	   function bkap_tours_callback() {
+	   	   }
+	   	   
+	   	   function bkap_tours_enable_email_callback( $args ) {
+	   	       	
+	   	       // First, we read the option
+	   	       $enable_emails = get_option( 'bkap_send_tickets_to_tour_operators' );
+	   	       // This condition added to avoid the notice displyed while Check box is unchecked.
+	   	       if( isset( $enable_emails ) &&  '' == $enable_emails ) {
+	   	           $enable_emails = 'off';
+	   	       }
+	   	       // Next, we update the name attribute to access this element's ID in the context of the display options array
+	   	       // We also access the show_header element of the options collection in the call to the checked() helper function
+	   	       $html = '<input type="checkbox" id="bkap_send_tickets_to_tour_operators" name="bkap_send_tickets_to_tour_operators" value="on" ' . checked( 'on', $enable_emails, false ) . '/>';
+	   	       // Here, we'll take the first argument of the array and add it to a label next to the checkbox
+	   	       $html .= '<label for="bkap_send_tickets_to_tour_operators"> '  . $args[0] . '</label>';
+	   	       	
+	   	       echo $html;
+	   	   }
+	   	   
+	   	   function bkap_tours_update_db_check() {
+	   	       global $wpdb;
+	   	       
+	   	       $option_query = "SELECT * FROM `" . $wpdb->prefix . "options`
+	                               WHERE option_name = %s";
+	   	       $results_option = $wpdb->get_results( $wpdb->prepare( $option_query, 'bkap_send_tickets_to_tour_operators' ) );
+	   	       
+	   	       if ( isset( $results_option ) && count( $results_option ) > 0 ) {
+	   	       } else {
+	   	           $saved_settings = json_decode( get_option( 'woocommerce_booking_global_settings' ) );
+	   	           if ( isset( $saved_settings->booking_send_tickets_to_tour_operators ) && $saved_settings->booking_send_tickets_to_tour_operators == 'on' ) {
+	   	               add_option( 'bkap_send_tickets_to_tour_operators', 'on' );
+	   	           } else {
+	   	               add_option( 'bkap_send_tickets_to_tour_operators', '' );
+	   	           }
+	   	       }
+	   	   }
+	   	   
 	function edd_sample_activate_license_tour() {
 					
 				// listen for our activate button to be clicked
@@ -254,8 +345,6 @@ if (!class_exists('tour_operators')) {
 			
 				}
 			}
-			
-			
 			
 			/************************************
 			 * this illustrates how to check if
