@@ -2,7 +2,7 @@
 if ( 'yes' == get_option( 'bkap_allow_tour_operator_gcal_api' ) ) {
     // Schedule an action if it's not already scheduled
     if ( ! wp_next_scheduled( 'tours_import_events' ) ) {
-        wp_schedule_event( time(), '24_hrs', 'tours_import_events' );
+        wp_schedule_event( time(), 'bkap_gcal_import', 'tours_import_events' );
     }
     
     // Hook into that action that'll fire once every day
@@ -80,7 +80,7 @@ class tours_calendar_sync {
              
             if ( isset( $values[ 'bkap_booking' ] ) && isset( $user_id ) && 'tour_operator' == $user_role ) {
         
-                if( $gcal->get_api_mode( $user_id ) == "directly" ) {
+                if( $gcal->get_api_mode( $user_id, $post_id ) == "directly" ) {
                     $_data    =   $values[ 'data' ];
                     $_booking    =   $values[ 'bkap_booking' ][0];
         
@@ -150,7 +150,12 @@ class tours_calendar_sync {
             
                             $event_details[ 'product_total' ] = $_booking[ 'price' ] * $values[ 'quantity' ];
             
-                            $gcal->insert_event( $event_details, $results[0]->order_item_id, $user_id, false );
+                            // if sync is disabled at the product level, set post_id to 0 to ensure tour operator settings are taken into consideration
+                            if ( isset( $booking_settings[ 'product_sync_integration_mode' ] ) && 'disabled' == $booking_settings[ 'product_sync_integration_mode' ] ) {
+                                $post_id = 0;
+                            }
+                            
+                            $gcal->insert_event( $event_details, $results[0]->order_item_id, $user_id, $post_id, false );
                             
                             // add an order note, mentioning an event has been created for the item
                             $order = new WC_Order( $order_id );
@@ -299,9 +304,7 @@ class tours_calendar_sync {
             $this->tours_import_events( $ical_array );
     
         }
-    
-        die();
-    
+        
     }
     
     function tours_import_events( $ical_array ) {

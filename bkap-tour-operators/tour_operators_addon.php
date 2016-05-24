@@ -131,7 +131,7 @@ if (!class_exists('tour_operators')) {
 			add_action( 'edit_user_profile_update', array(&$this, 'save_extra_user_profile_fields') );
 			add_filter('the_posts', array(&$this, 'filter_posts') , 1 );
 			
-            add_filter('user_has_cap', array($this, 'user_has_cap'), 10, 3);
+            add_filter('user_has_cap', array($this, 'user_has_cap'), 10, 4 );
             
             // Re-direct to the View Booking page
             add_action( 'admin_init', array( &$this, 'tours_load_view_booking_page' ) );
@@ -162,8 +162,34 @@ if (!class_exists('tour_operators')) {
     		add_action('admin_init', array(&$this, 'edd_sample_register_option_tour'));
 			add_action('admin_init', array(&$this, 'edd_sample_deactivate_license_tour'));
 			add_action('admin_init', array(&$this, 'edd_sample_activate_license_tour'));
+			
+			add_action( 'admin_init', array( &$this, 'tours_add_user_cap' ) );
 	   }
 		
+	   /**
+	    * Add capabilities for the tour operator to allow for managing ,
+	    * editing/deleting products assigned to him.
+	    * @since 1.8
+	    */
+	   function tours_add_user_cap() {
+	       $role = get_role( 'tour_operator' );
+	       $role->add_cap( 'manage_woocommerce_products' );
+	       $role->add_cap( 'edit_product' );
+	       $role->add_cap( 'read_product' );
+	       $role->add_cap( 'delete_product' );
+	       $role->add_cap( 'edit_products' );
+	       $role->add_cap( 'edit_others_products' );
+	       $role->add_cap( 'publish_products' );
+	       $role->add_cap( 'read_private_products' );
+	       $role->add_cap( 'delete_products' );
+	       $role->add_cap( 'delete_private_products' );
+	       $role->add_cap( 'delete_published_products' );
+	       $role->add_cap( 'edit_private_products' );
+	       $role->add_cap( 'edit_published_products' );
+	       $role->add_cap( 'edit_others_posts' );
+	       $role->add_cap( 'edit_products' );	   
+	   
+	   }
 	   function tour_operator_error_notice() {
 	       if ( !is_plugin_active( 'woocommerce-booking/woocommerce-booking.php' ) ) {
 	           echo "<div class=\"error\"><p>Tour Operators Addon is enabled but not effective. It requires WooCommerce Booking and Appointment plugin in order to work.</p></div>";
@@ -451,7 +477,7 @@ if (!class_exists('tour_operators')) {
 			if( is_admin() ): // checks if the url being accessed is in the admin section
 				$new_posts = array();
 				$user = new WP_User( get_current_user_id() );
-				if( $user->roles[ 0 ] == 'tour_operator' ) {
+				if( isset( $user->roles[ 0 ] ) && $user->roles[ 0 ] == 'tour_operator' ) {
 				// loop through all the post objects
 					foreach( $posts as $post ) {
 						if( $post->post_type == 'page' ) {
@@ -516,11 +542,9 @@ if (!class_exists('tour_operators')) {
 			endif;
 		}
 		
-		function user_has_cap($all_caps, $caps, $args){
-			 global $post,$shop_order;
+		function user_has_cap($all_caps, $caps, $args, $user ){
+			 global $post;
 			 global $wpdb;
-			 
-			 $user_capab = get_user_meta(get_current_user_id(),'wp_capabilities');
 			 
 			 if(isset($post->ID)) {
 				if($args[0] == 'edit_post') {
@@ -537,7 +561,7 @@ if (!class_exists('tour_operators')) {
 						foreach($results_check as $res) {
 							$product_id = $res->post_id;
 					
-							if ( array_key_exists( 'administrator', $user_capab[0] ) || array_key_exists( 'tour_operator', $user_capab[0] ) ) {
+							if ( isset( $user->roles[0] ) && ( 'administrator' == $user->roles[0] || 'tour_operator' == $user->roles[0] ) ) {
 								$flag = true;
 							}
 							else {
@@ -859,7 +883,7 @@ if (!class_exists('tour_operators')) {
 			}
 			
 			$userid =  new WP_User( $user_id );
-			if($userid->roles[0]=='tour_operator'){
+			if( isset( $userid->roles[ 0 ] ) && $userid->roles[ 0 ] == 'tour_operator' ) {
 				update_user_meta( $user_id, 'address', $_POST['address'] );
 				update_user_meta( $user_id, 'paypal', $_POST['paypal'] );
 				update_user_meta( $user_id, 'phone', $_POST['phone'] );
@@ -868,7 +892,7 @@ if (!class_exists('tour_operators')) {
 		
 		function extra_user_profile_fields( $user ) { 
 			$userid =  new WP_User( $user->ID );
-			if($userid->roles[0]=='tour_operator'){?>
+			if( isset( $userid->roles[0] ) && $userid->roles[0] == 'tour_operator' ){?>
 			<h3><?php _e("Extra profile information", "blank"); ?></h3>
 
 			<table class="form-table">
@@ -952,7 +976,7 @@ if (!class_exists('tour_operators')) {
 		
 		    $userid =  new WP_User( $user->ID );
 		
-		    if ( 'yes' == get_option( 'bkap_allow_tour_operator_gcal_api' ) && $userid->roles[ 0 ] == 'tour_operator' ) {
+		    if ( 'yes' == get_option( 'bkap_allow_tour_operator_gcal_api' ) && isset( $userid->roles[ 0 ] ) && $userid->roles[ 0 ] == 'tour_operator' ) {
 		        ?>
 		    		    
 		        		    <h3><?php _e( 'WooCommerce Booking and Appointment Google Calendar Sync Settings', 'woocommerce-booking' );?></h3>
@@ -1255,6 +1279,7 @@ if (!class_exists('tour_operators')) {
 		                              		  gcal_api_pre_test: '',
 		                                	    gcal_api_test: 1,
 		                                	    user_id: <?php echo $user->ID; ?>,
+                                	    		product_id: 0,
 		                                	    action: 'display_nag'
 		                        	        };
 		                                    jQuery( '#test_connection_ajax_loader' ).show();
@@ -1492,7 +1517,7 @@ if (!class_exists('tour_operators')) {
 		    		    $userid =  new WP_User( $user_id );
 		    		    	
 		    		
-		    		    if( 'tour_operator' == $userid->roles[0] ){
+		    		    if( isset( $userid->roles[ 0 ] ) && 'tour_operator' == $userid->roles[0] ){
 		    		
 		    		        if ( isset( $_POST[ 'tours_calendar_sync_integration_mode' ] ) ) {
 		    		            update_user_meta( $user_id, 'tours_calendar_sync_integration_mode', $_POST[ 'tours_calendar_sync_integration_mode' ] );
