@@ -220,7 +220,7 @@ if (!class_exists('tour_operators')) {
 	          					<form method="post" action="options.php">
 	          						<?php settings_errors(); ?>
 	          					    <?php settings_fields( 'bkap_tours_settings' ); ?>
-	          				        <?php do_settings_sections( 'woocommerce_booking_page' ); ?> 
+	          				        <?php do_settings_sections( 'woocommerce_booking_page-bkap_tours_settings_section' ); ?> 
 	          						<?php submit_button(); ?>
 	          			        </form>
 	          			    </div>
@@ -235,14 +235,14 @@ if (!class_exists('tour_operators')) {
 	   	       'bkap_tours_settings_section',         // ID used to identify this section and with which to register options
 	   	       __( 'Tour Operator Addon Settings', 'tour_operators' ),                  // Title to be displayed on the administration page
 	   	       array( $this, 'bkap_tours_callback' ), // Callback used to render the description of the section
-	   	       'woocommerce_booking_page'     // Page on which to add this section of options
+	   	       'woocommerce_booking_page-bkap_tours_settings_section'     // Page on which to add this section of options
 	   	       );
 	   	       
 	   	       add_settings_field(
 	   	       'bkap_send_tickets_to_tour_operators',
 	   	       __( 'Send Notification emails to Tour operators:', 'tour_operators' ),
 	   	       array( $this, 'bkap_tours_enable_email_callback' ),
-	   	       'woocommerce_booking_page',
+	   	       'woocommerce_booking_page-bkap_tours_settings_section',
 	   	       'bkap_tours_settings_section',
 	   	       array( __( 'Please select this checkbox if you want to send notification emails to tour operators when the order is completed.', 'tour_operators' ) )
 	   	       );
