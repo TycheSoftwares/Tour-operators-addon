@@ -43,7 +43,6 @@ class tours_import_bookings {
                 $total_items = count( $results );
             } 
         }
-        
         return $total_items;        
     }
     
@@ -55,13 +54,12 @@ class tours_import_bookings {
     function tours_import_data( $import_bookings ) {
         
         $user = new WP_User( get_current_user_id() );
-        
+        $class_obj = new WAPBK_Import_Bookings_Table();
+        $per_page         = $class_obj->per_page;
         if( isset( $user->roles[0] ) && $user->roles[0] == 'tour_operator' ) {
             $import_bookings = array();
-            
             // add records for the tour operator's calendar
             global $wpdb;
-            
             $option_name = 'tours_imported_events_' . $user->ID . '_%';
             $options_query = "SELECT option_name, option_value FROM `" . $wpdb->prefix. "options`
                             WHERE option_name like %s";
@@ -119,11 +117,25 @@ class tours_import_bookings {
                 }
             }
             
+            if ( isset( $_GET[ 'paged' ] ) && $_GET[ 'paged' ] > 1 ) {
+                $page_number = $_GET[ 'paged' ] - 1;
+            } else {
+                $page_number = 0;
+            }
+            
+            if( count( $results ) > $per_page ) {
+                $results = array_chunk( $results, $per_page );
+                if( isset( $results[ $page_number ] ) ) {
+                    $results = $results[ $page_number ];
+                } else {
+                    $results = array();
+                }
+            }
+            
             $class_obj = new WAPBK_Import_Bookings_Table();
             $import_bookings = $class_obj->bkap_create_data( $results );
-       
         }
-
+        
         return $import_bookings;
         
     }
