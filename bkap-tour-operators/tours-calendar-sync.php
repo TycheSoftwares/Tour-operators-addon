@@ -47,7 +47,9 @@ class tours_calendar_sync {
         
         $path_array = implode( '/', $path_array );
         
-        require_once $path_array . '/woocommerce-booking/includes/iCal/SG_iCal.php';
+        if ( file_exists( $path_array . '/woocommerce-booking/includes/iCal/SG_iCal.php' ) ) {
+            require_once $path_array . '/woocommerce-booking/includes/iCal/SG_iCal.php';
+        }    
        
     }
     
