@@ -218,7 +218,6 @@ if (!class_exists('tour_operators')) {
 	           ?>
 	          				<div id="content">
 	          					<form method="post" action="options.php">
-	          						<?php settings_errors(); ?>
 	          					    <?php settings_fields( 'bkap_tours_settings' ); ?>
 	          				        <?php do_settings_sections( 'woocommerce_booking_page-bkap_tours_settings_section' ); ?> 
 	          						<?php submit_button(); ?>
