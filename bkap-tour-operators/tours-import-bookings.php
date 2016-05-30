@@ -38,6 +38,48 @@ class tours_import_bookings {
                             WHERE option_name like %s";
             
             $results = $wpdb->get_results( $wpdb->prepare( $options_query, $option_name ) );
+            $count = count ( $results );
+            
+            // add records for the product calendars
+            $options_query = "SELECT option_name, option_value FROM `" . $wpdb->prefix. "options`
+                                        WHERE option_name like 'bkap_imported_events_%'";
+            
+            $imported_product_results = $wpdb->get_results( $options_query );
+            
+            $args       = array( 'post_type' => 'product', 'posts_per_page' => -1 );
+            $product    = query_posts( $args );
+
+            $product_ids = array();
+            foreach($product as $k => $v){
+                $product_ids[] = $v->ID;
+            }
+            if ( is_array( $product_ids ) && count( $product_ids ) > 0 ) {
+                foreach( $product_ids as $k => $v ){
+                    $duplicate_of  = bkap_common::bkap_get_product_id( $v );
+                    $is_bookable = bkap_common::bkap_get_bookable_status( $duplicate_of );
+                    if ( $is_bookable ) {
+                        $booking_settings = get_post_meta( $duplicate_of, 'woocommerce_booking_settings' , true );
+            
+                        if( isset( $booking_settings[ 'booking_tour_operator' ] ) &&  $booking_settings[ 'booking_tour_operator' ] == $user->ID ) {
+                            $event_uids = get_post_meta( $duplicate_of, 'bkap_event_uids_ids', true );
+                        }
+                    }
+            
+                    if ( is_array( $imported_product_results ) && count( $imported_product_results ) > 0 ) {
+                        foreach ( $imported_product_results as $key => $value ) {
+                            $event_details = json_decode( $value->option_value );
+                            $uid = $event_details->uid;
+                            if ( is_array( $event_uids ) && count( $event_uids ) > 0 ) {
+                                if ( in_array( $uid, $event_uids ) ) {
+                                    $results[ $count ]->option_name = $value->option_name;
+                                    $results[ $count ]->option_value = $value->option_value;
+                                    $count++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             
             if (isset( $results ) && count( $results ) > 0 ) {
                 $total_items = count( $results );
