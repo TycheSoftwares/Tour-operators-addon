@@ -153,7 +153,7 @@ class tours_calendar_sync {
                             $event_details[ 'product_total' ] = $_booking[ 'price' ] * $values[ 'quantity' ];
             
                             // if sync is disabled at the product level, set post_id to 0 to ensure tour operator settings are taken into consideration
-                            if ( isset( $booking_settings[ 'product_sync_integration_mode' ] ) && 'disabled' == $booking_settings[ 'product_sync_integration_mode' ] ) {
+                            if ( ( ! isset( $booking_settings[ 'product_sync_integration_mode' ] ) ) || ( isset( $booking_settings[ 'product_sync_integration_mode' ] ) && 'disabled' == $booking_settings[ 'product_sync_integration_mode' ] ) ) {
                                 $post_id = 0;
                             }
                             
