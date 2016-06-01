@@ -13,7 +13,7 @@ class tours_view_bookings {
         add_filter( 'bkap_bookings_table_views', array( &$this, 'tours_booking_views' ), 20, 1 );	
         
         // modify the total # of items
-        add_filter( 'bkap_total_count', array( &$this, 'tours_total_count' ), 20, 1 );
+//        add_filter( 'bkap_total_count', array( &$this, 'tours_total_count' ), 20, 1 );
     }
     
     function operator_bookings_page(){
