@@ -201,7 +201,7 @@ class tour_operators_print_tickets {
 	
 	public static function tour_operators_details( $order, $sent_to_admin = false, $plain_text = false ) {
 		$order_items = $order->get_items();
-		$booking_date_label = get_option('book.item-meta-date');
+		$booking_date_label = get_option('book_item-meta-date');
 		
 		$booking_date = '';
 		foreach($order_items as $item_key => $item_value) {
