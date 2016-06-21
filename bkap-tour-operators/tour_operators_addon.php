@@ -771,7 +771,8 @@ if (!class_exists('tour_operators')) {
 			 $comment_show = '';
 			?>
 			</select>
-
+            </td>
+            <td>
 			<img class="help_tip" width="16" height="16" data-tip="<?php _e('Select Tour Operator', 'woocommerce-booking');?>" src="<?php echo plugins_url() ;?>/woocommerce/assets/images/help.png" />
 
 			</td>
@@ -785,7 +786,9 @@ if (!class_exists('tour_operators')) {
 
 			<td>
 			<input type="checkbox" name="show_tour_operator" id="show_tour_operator" value="yes" <?php echo $tour_show;?>></input>
-			<img class="help_tip" width="16" height="16" style="margin-left:128px;" data-tip="<?php _e('Please select this checkbox if you want to show Tour Operator on product page', 'woocommerce-booking');?>" src="<?php echo plugins_url() ;?>/woocommerce/assets/images/help.png"/>
+			</td>
+            <td>
+			<img class="help_tip" width="16" height="16" data-tip="<?php _e('Please select this checkbox if you want to show Tour Operator on product page', 'woocommerce-booking');?>" src="<?php echo plugins_url() ;?>/woocommerce/assets/images/help.png"/>
 				</td>
 			</tr>
 			<tr>
@@ -796,7 +799,9 @@ if (!class_exists('tour_operators')) {
 
 			<td>
 			<input type="checkbox" name="booking_show_comment" id="booking_show_comment" value="yes" <?php echo $comment_show;?>></input>
-			<img class="help_tip" width="16" height="16" style="margin-left:128px;" data-tip="<?php _e('Please select this checkbox if you want to show comment field on product page', 'woocommerce-booking');?>" src="<?php echo plugins_url() ;?>/woocommerce/assets/images/help.png"/>
+			</td>
+            <td>
+			<img class="help_tip" width="16" height="16" data-tip="<?php _e('Please select this checkbox if you want to show comment field on product page', 'woocommerce-booking');?>" src="<?php echo plugins_url() ;?>/woocommerce/assets/images/help.png"/>
 				</td>
 			</tr>
 			</table>
