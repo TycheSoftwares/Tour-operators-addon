@@ -16,7 +16,7 @@ class tours_view_bookings {
 //        add_filter( 'bkap_total_count', array( &$this, 'tours_total_count' ), 20, 1 );
     }
     
-    function operator_bookings_page(){
+    public static function operator_bookings_page(){
         // Call the View Bookings page function here, so all the entries are passed on...
         view_bookings::bkap_woocommerce_history_page();
     }
