@@ -36,7 +36,11 @@ class tour_operators_print_tickets {
 				$from_email = get_option('woocommerce_email_from_address');
 				$from_email_name = get_option('woocommerce_email_from_name');
 				$email_heading = 'New customer order';//get_headers('email');
-				$subject = 'New customer order ('.$order_id.') - '.date('F j, Y',strtotime($order_obj->order_date));
+								
+				$order_created_obj = $order_obj->get_date_created();
+				$order_date      = $order_created_obj->format('Y-m-d H:i:s');
+				
+				$subject = 'New customer order ('.$order_id.') - '.date('F j, Y',strtotime( $order_date ));
 				// Load colours
 				$bg 		= get_option( 'woocommerce_email_background_color' );
 				$body		= get_option( 'woocommerce_email_body_background_color' );
@@ -138,12 +142,12 @@ class tour_operators_print_tickets {
 				<tr>
 				<td valign="top">
 				<div style="'.$body_content_inner.'">';
-				$template .= '<p>'.__( 'You have received an order from '.$order_obj->billing_first_name . ' ' . $order_obj->billing_last_name .'. The order is as follows:', 'woocommerce' ).'</p>';
+				$template .= '<p>'.__( 'You have received an order from '.$order_obj->get_billing_first_name() . ' ' . $order_obj->get_billing_last_name() .'. The order is as follows:', 'woocommerce' ).'</p>';
 				ob_start();
 				do_action( 'woocommerce_email_before_order_table', $order_obj, true, false );
 				$template .= ob_get_clean();
 					
-				$template .= '<h2><a href="'.admin_url( 'post.php?post=' . $order_obj->id . '&action=edit' ).'">'.__( 'Order #'.$order_obj->get_order_number(), 'woocommerce').'</a> (<time datetime="'.date_i18n( 'c', strtotime( $order_obj->order_date )).'">'. date_i18n( wc_date_format(), strtotime( $order_obj->order_date ) ).'</time>)</h2>
+				$template .= '<h2><a href="'.admin_url( 'post.php?post=' . $order_obj->get_id() . '&action=edit' ).'">'.__( 'Order #'.$order_obj->get_order_number(), 'woocommerce').'</a> (<time datetime="'.date_i18n( 'c', strtotime( $order_date )).'">'. date_i18n( wc_date_format(), strtotime( $order_date ) ).'</time>)</h2>
 				<table cellspacing="0" cellpadding="6" style="width: 100%; border: 1px solid #eee;" border="1" bordercolor="#eee">
 				<thead>
 				<tr>
@@ -182,9 +186,9 @@ class tour_operators_print_tickets {
 				}
 				$template .=  '</tfoot>
 				</table>
-				<h2>'.__( 'Customer details', 'woocommerce' ).'</h2>
-				<p><strong>'.__( 'Email:', 'woocommerce' ).'</strong>'.$order_obj->billing_email.'</p>
-				<p><strong>'. __( 'Tel:', 'woocommerce' ).'</strong>'.$order_obj->billing_phone.'</p>';
+				<h2>' . __( 'Customer details', 'woocommerce' ) . '</h2>
+				<p><strong>' . __( 'Email:', 'woocommerce' ) . '</strong>' . $order_obj->get_billing_email() . '</p>
+				<p><strong>' . __( 'Tel:', 'woocommerce' ) . '</strong>' . $order_obj->get_billing_phone() . '</p>';
 				ob_start();
 				wc_get_template( 'emails/email-addresses.php', array( 'order' => $order_obj ) );
 				$template .= ob_get_clean();
