@@ -165,7 +165,8 @@ class tour_operators_print_tickets {
 						'show_sku'              => false,
 						'show_purchase_note'    => false,
 						'show_image'            => false,
-						'image_size'            => array( 32, 32 )
+						'image_size'            => array( 32, 32 ),
+						'plain_text'            => false
 				) );
 				$template .= ob_get_clean();
 				$template .='</tbody>
