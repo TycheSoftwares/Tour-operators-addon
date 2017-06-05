@@ -720,7 +720,7 @@ if (!class_exists('tour_operators')) {
 		********************************************************/
 		function tours_tab($product_id) {
 			?>
-			<li><a id="tours"> <?php _e( 'Tour Operators', 'woocommerce-booking' );?> </a></li>
+			<li><a id="tours"><i class="fa fa-user" aria-hidden="true"></i><?php _e( 'Tour Operators', 'woocommerce-booking' );?> </a></li>
 			<?php
 		}
 		
