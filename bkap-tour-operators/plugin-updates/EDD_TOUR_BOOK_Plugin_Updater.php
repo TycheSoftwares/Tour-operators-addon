@@ -7,7 +7,7 @@
  * Allows plugins to use their own update API.
  *
  * @author Ashok Rane
- * @version 2.1
+ * @version 2.2
  */
 class EDD_TOUR_BOOK_Plugin_Updater {
 	private $api_url  = 'http://www.tychesoftwares.com/';
