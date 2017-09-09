@@ -252,7 +252,6 @@ if (!class_exists('tour_operators')) {
        
         function tours_include_files_admin() {
             include_once( 'tours-calendar-sync.php' );
-            include_once( 'tours-import-bookings.php' );
             include_once( 'tours-view-bookings.php' );
         }
        
@@ -590,7 +589,15 @@ if (!class_exists('tour_operators')) {
                                 if( $flag ) {
                                     $new_posts[] = $post;
                                 }
-                            } 
+                            } else if ( $post->post_type === 'bkap_gcal_event' ) {
+                                
+                                $post_author_id = $post->post_author;
+                                
+                                if( get_current_user_id() == $post_author_id ) {
+                                    $new_posts[] = $post;
+                                }
+                            }
+                             
                         }
                     } else {
                         return $posts;
@@ -1024,24 +1031,16 @@ if (!class_exists('tour_operators')) {
                     'manage_tours', 
                     array(&$this,'operator_tours_page')
                 );
-                add_submenu_page(
-                    null, // Third party plugin Slug 
-                    'View Bookings', 
-                    'View Bookings', 
-                    'operator_bookings', 
-                    'operator_bookings', 
-                    array( 'tours_view_bookings', 'operator_bookings_page' )
-                );
-                add_submenu_page(
-                    'edit.php?post_type=bkap_booking', // Third party plugin Slug
-                    'Import Bookings',
-                    'Import Bookings',
-                    'operator_bookings',
-                    'tours_import_bookings',
-                    array( 'tours_import_bookings','tours_import_bookings_page' )
-                );
+                
                 // License menu page
-                $page = add_submenu_page('edit.php?post_type=bkap_booking', __( 'Activate Tour Operators License', 'woocommerce-booking' ), __( 'Activate Tour Operators License', 'woocommerce-booking' ), 'manage_woocommerce', 'tours_license_page', array(&$this, 'edd_sample_license_page_tours' ));
+                $page = add_submenu_page( 
+                            'edit.php?post_type=bkap_booking', 
+                            __( 'Activate Tour Operators License', 'woocommerce-booking' ), 
+                            __( 'Activate Tour Operators License', 'woocommerce-booking' ), 
+                            'manage_woocommerce', 
+                            'tours_license_page', 
+                            array( &$this, 'edd_sample_license_page_tours' )
+                        );
             }
 
             function operator_tours_page(){

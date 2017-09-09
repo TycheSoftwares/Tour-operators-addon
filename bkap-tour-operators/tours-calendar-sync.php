@@ -286,6 +286,7 @@ class tours_calendar_sync {
         
         if( count( $ics_feed_urls ) > 0 && isset( $ics_feed_urls[ $ics_url_key ] ) ) {
             $ics_feed = $ics_feed_urls[ $ics_url_key ];
+            $ics_feed = str_replace( 'https://', '', $ics_feed );
         } else {
             $ics_feed = '';
         }
@@ -294,6 +295,7 @@ class tours_calendar_sync {
             if ( isset( $ics_feed_urls ) && count( $ics_feed_urls ) > 0 ) {
     
                 foreach ( $ics_feed_urls as $ics_feed ) {
+                    $ics_feed = str_replace( 'https://', '', $ics_feed );
                     $ical = new BKAP_iCalReader( $ics_feed );
                     $ical_array = $ical->getEvents();
                     $this->tours_import_events( $ical_array );
@@ -355,7 +357,11 @@ class tours_calendar_sync {
                     
                         $option_name = 'tours_imported_events_' . $user_id . '_' . $i;
                         add_option( $option_name, json_encode( $value_event ) );
-        
+                        
+                        // Storing the event as post type.
+                        $status = "bkap-unmapped";
+                        bkap_calendar_sync::bkap_create_gcal_event_post( $value_event, $product_id , $status, $option_name, $user_id );
+                        
                         array_push( $event_uids, $value_event->uid );
                         update_user_meta( $user_id, 'tours_event_uids_ids', $event_uids );
                     }
