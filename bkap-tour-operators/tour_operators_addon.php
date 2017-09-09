@@ -1037,7 +1037,7 @@ if (!class_exists('tour_operators')) {
                     'View Bookings', 
                     'View Bookings', 
                     'operator_bookings', 
-                    'woocommerce_history_page', 
+                    'operator_bookings', 
                     array( 'tours_view_bookings', 'operator_bookings_page' )
                 );
                 
@@ -1187,9 +1187,10 @@ if (!class_exists('tour_operators')) {
 
             function tours_enqueue_scripts_js() {
                 
-                if( ( isset( $_GET['page'] ) && $_GET['page'] == 'woocommerce_history_page' ) || 
+                if((( isset( $_GET['page'] ) && $_GET['page'] == 'woocommerce_history_page' ) || 
                     ( isset( $_GET['page'] ) && $_GET['page'] == 'operator_bookings' ) || 
-                    ( isset( $_GET['post_type'] ) && $_GET['post_type'] === 'bkap_booking' ) ) {
+                    ( isset( $_GET['post_type'] ) && $_GET['post_type'] === 'bkap_booking' ) ) && 
+                    current_user_can( 'operator_bookings' ) ) {
 
                     wp_enqueue_script( 'bkap-tour-view-booking', plugins_url( '/js/bkap-tour-view-booking.js', __FILE__ ), '', '', false );
                 }
