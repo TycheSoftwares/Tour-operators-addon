@@ -114,6 +114,7 @@ if (!class_exists('tour_operators')) {
             add_action('bkap_add_submenu', array(&$this, 'operator_tour_submenu'), 11 );
             add_action('bkap_before_add_to_cart_button',array(&$this, 'add_comment_field'), 10, 1);
 
+            add_action( 'admin_enqueue_scripts', array(&$this, 'tours_enqueue_scripts_js' ) );
             add_action( 'admin_enqueue_scripts', array(&$this, 'tours_enqueue_scripts_css' ) );
             
             add_filter('bkap_addon_add_cart_item_data', array(&$this, 'tours_add_cart_item_data'), 10, 2);
@@ -1031,13 +1032,12 @@ if (!class_exists('tour_operators')) {
                     'manage_tours', 
                     array(&$this,'operator_tours_page')
                 );
-                
                 add_submenu_page(
-                    null, // Third party plugin Slug
-                    'View Bookings',
-                    'View Bookings',
-                    'operator_bookings',
-                    'operator_bookings',
+                    null, // Third party plugin Slug 
+                    'View Bookings', 
+                    'View Bookings', 
+                    'operator_bookings', 
+                    'woocommerce_history_page', 
                     array( 'tours_view_bookings', 'operator_bookings_page' )
                 );
                 
@@ -1182,6 +1182,16 @@ if (!class_exists('tour_operators')) {
                 // include the file on the Import Bookings page
                 if ( isset( $_GET[ 'page' ] ) && 'tours_import_bookings' == $_GET[ 'page' ] ) {
                     wp_enqueue_style( 'tours-style', plugins_url('/css/profile.class.css', __FILE__ ) , '', $plugin_version_number , false );
+                }
+            }
+
+            function tours_enqueue_scripts_js() {
+                
+                if( ( isset( $_GET['page'] ) && $_GET['page'] == 'woocommerce_history_page' ) || 
+                    ( isset( $_GET['page'] ) && $_GET['page'] == 'operator_bookings' ) || 
+                    ( isset( $_GET['post_type'] ) && $_GET['post_type'] === 'bkap_booking' ) ) {
+
+                    wp_enqueue_script( 'bkap-tour-view-booking', plugins_url( '/js/bkap-tour-view-booking.js', __FILE__ ), '', '', false );
                 }
             }
         
