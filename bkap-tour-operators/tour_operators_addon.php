@@ -1032,6 +1032,15 @@ if (!class_exists('tour_operators')) {
                     array(&$this,'operator_tours_page')
                 );
                 
+                add_submenu_page(
+                    null, // Third party plugin Slug
+                    'View Bookings',
+                    'View Bookings',
+                    'operator_bookings',
+                    'operator_bookings',
+                    array( 'tours_view_bookings', 'operator_bookings_page' )
+                );
+                
                 // License menu page
                 $page = add_submenu_page( 
                             'edit.php?post_type=bkap_booking', 
