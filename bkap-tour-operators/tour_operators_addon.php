@@ -1,12 +1,17 @@
 <?php 
 /*
-Plugin Name: Tour Operators Addon
-Plugin URI: https://www.tychesoftwares.com/store/premium-plugins/tour-operators-addon-for-woocommerce-booking-appointment-plugin/
-Description: This is an addon for the WooCommerce Booking & Appointment Plugin which lets you to add and Manage Tour Operators.
-Version: 2.2
-Author: Tyche Softwares
-Author URI: http://www.tychesoftwares.com/
-*/
+ * Plugin Name: Tour Operators Addon
+ * Plugin URI: https://www.tychesoftwares.com/store/premium-plugins/tour-operators-addon-for-woocommerce-booking-appointment-plugin/
+ * Description: This is an addon for the WooCommerce Booking & Appointment Plugin which lets you to add and Manage Tour Operators.
+ * Version: 2.2
+ * Author: Tyche Softwares
+ * Author URI: http://www.tychesoftwares.com/
+ * Requires at least: 3.9.0
+ * Tested up to: 4.8.1
+ * Requires PHP: 5.6
+ * WC requires at least: 3.0.0
+ * WC tested up to: 3.2.0
+ */
 
 /*require 'plugin-updates/plugin-update-checker.php';
 $ExampleUpdateChecker = new PluginUpdateChecker(
