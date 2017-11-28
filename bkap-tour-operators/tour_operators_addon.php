@@ -602,6 +602,8 @@ if (!class_exists('tour_operators')) {
                                 if( get_current_user_id() == $post_author_id ) {
                                     $new_posts[] = $post;
                                 }
+                            } else {
+                                return $posts;
                             }
                              
                         }
