@@ -63,20 +63,24 @@ class EDD_TOUR_BOOK_Plugin_Updater {
 	 * @return array Modified update array with custom plugin data.
 	 */
 	function pre_set_site_transient_update_plugins_filter( $_transient_data ) {
+	           
+            $license_status = get_option ('edd_sample_license_status_tour_book');
+         
+            if ( isset ( $license_status) && $license_status == 'valid' ) {
+            
+               if( empty( $_transient_data ) ) return $_transient_data;
+    
+               $to_send = array( 'slug' => $this->slug );
+    
+               $api_response = $this->api_request( 'plugin_latest_version', $to_send );
 
-
-		if( empty( $_transient_data ) ) return $_transient_data;
-
-		$to_send = array( 'slug' => $this->slug );
-
-		$api_response = $this->api_request( 'plugin_latest_version', $to_send );
-
-		if( false !== $api_response && is_object( $api_response ) && isset( $api_response->new_version ) ) {
-			if( version_compare( $this->version, $api_response->new_version, '<' ) )
-				$_transient_data->response[$this->name] = $api_response;
-	}
-		return $_transient_data;
-	}
+                if( false !== $api_response && is_object( $api_response ) && isset( $api_response->new_version ) ) {
+	                if( version_compare( $this->version, $api_response->new_version, '<' ) )
+	                    $_transient_data->response[$this->name] = $api_response;
+	            }
+            }
+            	return $_transient_data;
+    }
 
 
 	/**
