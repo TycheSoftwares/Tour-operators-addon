@@ -938,7 +938,10 @@ if (!class_exists('tour_operators')) {
             ********************************************************/
             function tours_tab($product_id) {
                 ?>
-                <li><a id="tours"><i class="fa fa-user" aria-hidden="true"></i><?php _e( 'Tour Operators', 'woocommerce-booking' );?> </a></li>
+                <li class="tstab-tab" data-link="tours_page">
+                    <a id="tours" class="bkap_tab">
+                    <i class="fa fa-user" aria-hidden="true" style="font-size:12px;"></i><?php _e( 'Tour Operators', 'woocommerce-booking' );?> </a>
+                </li>
                 <?php
             }
         
@@ -955,7 +958,7 @@ if (!class_exists('tour_operators')) {
                     $show_comment = $booking_settings["booking_show_comment"];
                 
                 ?>
-                <div id="tours_page" style="display:none;">
+                <div id="tours_page" class="tstab-content" style="position: relative;display:none;">
                 <table class='form-table'>
                 <tr id="tour_operators">
                 <th>
