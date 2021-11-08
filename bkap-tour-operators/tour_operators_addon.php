@@ -906,7 +906,9 @@ if (!class_exists('tour_operators')) {
 
             function tour_settings_save($booking_settings, $product_id){
                 if(isset($_POST['booking_tour_operator']) && !empty($_POST["booking_tour_operator"])) {
-                    $booking_settings['booking_tour_operator'] = $_POST['booking_tour_operator']; 
+                    $booking_settings['booking_tour_operator'] = $_POST['booking_tour_operator'];
+                    $booking_settings['show_tour_operator']   = '';
+                    $booking_settings['booking_show_comment'] = '';
                     if(isset($_POST['show_tour_operator'])) {
                         $booking_settings['show_tour_operator'] = 'on';
                     }
